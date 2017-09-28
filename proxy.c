@@ -4,7 +4,7 @@
 #include "proxy.h"
 
 //Function Prototypes
-int read_request(void); // <-- NOTE: Must become static again once serve_request() implemented.
+static int read_request(void);
 static int parse_request(void);
 static int authenticate(void);
 static int connect_to_host(void);
@@ -16,6 +16,7 @@ static int respond(void);
 /* -------------------------------------------------------------------------------------------------------*/
 
 int read_request(void){
+
   printf("Read Request: ");
 
   int success = rand() % 2;
@@ -43,6 +44,7 @@ int read_request(void){
 /* -------------------------------------------------------------------------------------------------------*/
 
 static int parse_request(void){
+
   printf("Parse Request: ");
   int success = rand() % 2;
 
@@ -80,6 +82,7 @@ static int parse_request(void){
 /* -------------------------------------------------------------------------------------------------------*/
 
 static int connect_to_host(void){
+
   printf("Connect to Host: ");
 
   int success = rand() % 2;
@@ -98,6 +101,7 @@ static int connect_to_host(void){
 /* -------------------------------------------------------------------------------------------------------*/
 
 static int authenticate(void){
+
   printf("Authenticate: ");
 
   int request_type = rand() % 2;
@@ -117,6 +121,7 @@ static int authenticate(void){
 /* -------------------------------------------------------------------------------------------------------*/
 
 static int send_request_to_host(void){
+
   printf("Send Request to Host: ");
 
   int success = rand() % 2;
@@ -135,6 +140,7 @@ static int send_request_to_host(void){
 /* -------------------------------------------------------------------------------------------------------*/
 
 static int get_response(void){
+
   printf("Get Response: ");
 
   int success = rand() % 2;
@@ -153,6 +159,7 @@ static int get_response(void){
 /* -------------------------------------------------------------------------------------------------------*/
 
 static int respond(void){
+
   printf("Respond: ");
 
   int success = rand() % 2;
@@ -169,8 +176,13 @@ static int respond(void){
 }
 /* -------------------------------------------------------------------------------------------------------*/
 
-int serve_request(void *thread_info) {
+void *serve_request(void *thread_info) {
+
+  int client = (int) thread_info;
+
+  printf("New thread! \n Client: %d \n", client);
+
   //Called every time a thread is created.
   //Equivalent of threadRoutine in my-server.c
-  return EXIT_SUCCESS;
+  pthread_exit(NULL);
 }

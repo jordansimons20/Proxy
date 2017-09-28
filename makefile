@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Wextra -std=c99
+CFLAGS = -Wall -Wextra -std=c99 -pthread
 
 all: my-proxy
 
