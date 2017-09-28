@@ -2,12 +2,13 @@ CFLAGS = -Wall -Wextra -std=c99
 
 all: my-proxy
 
-my-proxy: proxy.o #next_file.o
-	cc -o my-proxy proxy.o #next_file.o
+my-proxy: infrastructure.o  proxy.o #next_file.o
+	cc -o my-proxy infrastructure.o proxy.o #next_file.o
+
+infrastructure.o: infrastructure.c proxy.h
 
 proxy.o: proxy.c proxy.h
-
 #next_file.o: next_file.c proxy.h
 
 clean:
-	rm -f proxy proxy.o #next_file.o
+	rm -f my-proxy infrastructure.o proxy.o #next_file.o

@@ -3,7 +3,7 @@
 /* Function Prototypes */
 // int start_server(void);
 // int accept_connection(void);
-int serve_request(*void);
+int serve_request(void *thread_info);
 // int read_request(void);
 // int parse_request(void);
 // int authenticate(void);

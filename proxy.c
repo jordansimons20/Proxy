@@ -1,44 +1,19 @@
-/* proxy.c, by Jordan Simons. Skeleton of a program to create a proxy web server. */
+/* Functionality of Proxy web server. */
 #include <stdio.h>
 #include <stdlib.h>
 #include "proxy.h"
-#include <time.h>
 
-///////////////////////////////////////////////////////////////////////////////////////////////
+//Function Prototypes
+int read_request(void); // <-- NOTE: Must become static again once serve_request() implemented.
+static int parse_request(void);
+static int authenticate(void);
+static int connect_to_host(void);
+static int send_request_to_host(void);
+static int get_response(void);
+static int respond(void);
 
-int main(void){
-  srand(time(NULL));
-  start_server();
-
-  return EXIT_SUCCESS;
-}
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-int start_server(void){
-  printf("Start Server \n");
-  accept_connection();
-
-  return EXIT_SUCCESS;
-}
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-int accept_connection(void){
-  printf("Accept Connection: ");
-
-  int success = rand() % 2;
-  if (success == 0){
-    printf("Success \n");
-    read_request();
-   }
-
-  else{
-    printf("Failure \n");
-    log_result();
-   }
-
-  return EXIT_SUCCESS;
-}
-///////////////////////////////////////////////////////////////////////////////////////////////
+//Functions
+/* -------------------------------------------------------------------------------------------------------*/
 
 int read_request(void){
   printf("Read Request: ");
@@ -65,9 +40,9 @@ int read_request(void){
 
   return EXIT_SUCCESS;
 }
-///////////////////////////////////////////////////////////////////////////////////////////////
+/* -------------------------------------------------------------------------------------------------------*/
 
-int parse_request(void){
+static int parse_request(void){
   printf("Parse Request: ");
   int success = rand() % 2;
 
@@ -102,8 +77,9 @@ int parse_request(void){
 
   return EXIT_SUCCESS;
 }
-///////////////////////////////////////////////////////////////////////////////////////////////
-int connect_to_host(void){
+/* -------------------------------------------------------------------------------------------------------*/
+
+static int connect_to_host(void){
   printf("Connect to Host: ");
 
   int success = rand() % 2;
@@ -119,8 +95,9 @@ int connect_to_host(void){
 
   return EXIT_SUCCESS;
 }
-///////////////////////////////////////////////////////////////////////////////////////////////
-int authenticate(void){
+/* -------------------------------------------------------------------------------------------------------*/
+
+static int authenticate(void){
   printf("Authenticate: ");
 
   int request_type = rand() % 2;
@@ -137,8 +114,9 @@ int authenticate(void){
   return EXIT_SUCCESS;
 
 }
-///////////////////////////////////////////////////////////////////////////////////////////////
-int send_request_to_host(void){
+/* -------------------------------------------------------------------------------------------------------*/
+
+static int send_request_to_host(void){
   printf("Send Request to Host: ");
 
   int success = rand() % 2;
@@ -154,8 +132,9 @@ int send_request_to_host(void){
 
   return EXIT_SUCCESS;
 }
-///////////////////////////////////////////////////////////////////////////////////////////////
-int get_response(void){
+/* -------------------------------------------------------------------------------------------------------*/
+
+static int get_response(void){
   printf("Get Response: ");
 
   int success = rand() % 2;
@@ -171,17 +150,9 @@ int get_response(void){
 
   return EXIT_SUCCESS;
 }
-///////////////////////////////////////////////////////////////////////////////////////////////
+/* -------------------------------------------------------------------------------------------------------*/
 
-int log_result(void){
-  printf("Log Result \n");
-  return EXIT_SUCCESS;
-
-  // In the actual program, this will call accept_connection() again after logging.
-}
-///////////////////////////////////////////////////////////////////////////////////////////////
-
-int respond(void){
+static int respond(void){
   printf("Respond: ");
 
   int success = rand() % 2;
@@ -194,5 +165,12 @@ int respond(void){
     log_result();
    }
 
+  return EXIT_SUCCESS;
+}
+/* -------------------------------------------------------------------------------------------------------*/
+
+int serve_request(void *thread_info) {
+  //Called every time a thread is created.
+  //Equivalent of threadRoutine in my-server.c
   return EXIT_SUCCESS;
 }
