@@ -12,8 +12,10 @@ void *serve_request(void *thread_info);
 // int get_response(void);
 // int respond(void);
 
-int log_result(void); //Will likely be a void function, accepting a string message.
+void log_event(char *log_message);
 extern int master_pid;
+static const int LOG_SIZE = 200;
 
 #include <pthread.h>
+#include <fcntl.h>
 #endif

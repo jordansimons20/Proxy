@@ -1,4 +1,9 @@
 /* Infrastucture of proxy web server. */
+
+/* NOTE: Currently appears to be working as expected.
+  A thread is created, then returns immediately after printing some information.*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "proxy.h"
@@ -28,21 +33,23 @@ int main(void){
 
   int port = 8080;
   int server;
+  char log_message[LOG_SIZE];
 
   /* Start a new server */
   if (-1 == (server = start_server(port))) {
     perror("Starting server");
+    // strncpy(log_message, "start_server() failure", LOG_SIZE);
+    // log_event(log_message);
     return EXIT_FAILURE;
   }
-  // TODO: Log server started.
+
+  strncpy(log_message, "Proxy Server Started.", LOG_SIZE);
+  log_event(log_message);
 
   accept_connection(server);
 
-  // /* Finally,stop the server */
-  // if (-1 == stop_server(server)) {
-  //   perror("Stopping server");
-  //   return EXIT_FAILURE;
-  // }
+  strncpy(log_message, "Proxy Server Terminated.", LOG_SIZE);
+  log_event(log_message);
 
   return EXIT_SUCCESS;
 }
@@ -52,10 +59,14 @@ static int start_server(int port){
 
   int server;
   struct sockaddr_in serv_addr;
+  //char log_message[LOG_SIZE];
 
   /* Create a new TCP/IP socket */
-  if (-1 == (server = socket(AF_INET, SOCK_STREAM, 0)))
-    return -1;
+  if (-1 == (server = socket(AF_INET, SOCK_STREAM, 0)) ) {
+    // strncpy(log_message, "start_server() failure: socket()", LOG_SIZE);
+    // log_event(log_message);
+    perror("Creating socket");
+    return EXIT_FAILURE; }
 
   /* Prepare the endpoint */
   bzero((char *) &serv_addr, sizeof(serv_addr));
@@ -64,12 +75,18 @@ static int start_server(int port){
   serv_addr.sin_port = htons(port);
 
   /* Bind the endpoint to the socket */
-  if (-1 == bind(server, (struct sockaddr *) &serv_addr, sizeof(serv_addr)))
-    return -1;
+  if (-1 == bind(server, (struct sockaddr *) &serv_addr, sizeof(serv_addr))) {
+    // strncpy(log_message, "start_server() failure: bind()", LOG_SIZE);
+    // log_event(log_message);
+    perror("Binding endpoint to socket");
+    return EXIT_FAILURE; }
 
   /* Prepare for listening */
-  if (-1 == listen(server, 5))
-    return -1;
+  if (-1 == listen(server, 5)) {
+    // strncpy(log_message, "start_server() failure: listen()", LOG_SIZE);
+    // log_event(log_message);
+    perror("Prepare for listening");
+    return EXIT_FAILURE; }
 
   return server;
 }
@@ -80,6 +97,27 @@ static int accept_connection(int server){
   int client;
   int done = 0; // NOTE: This value will only change if the errno from accept returning -1 is set to EINTR (happens w/ SIGUSR1).
   pthread_t newThread = NULL;
+  FILE *pidFile;
+  char log_message[LOG_SIZE];
+
+  /* Open proxy.pid */
+  pidFile = fopen("/tmp/proxy.pid", "w");
+  if (pidFile == NULL) {
+    strncpy(log_message, "Failure: Open proxy.pid", LOG_SIZE);
+    log_event(log_message);
+    perror("Open proxy.pid");
+    return EXIT_FAILURE;
+    }
+
+  /* Write master thread pid into proxy.pid */
+  if ( fprintf(pidFile, "%d", getpid() ) < 0){
+    strncpy(log_message, "Failure: Write to proxy.pid", LOG_SIZE);
+    log_event(log_message);
+    perror("Write to proxy.pid");
+    return EXIT_FAILURE;
+    }
+
+  fclose(pidFile);
 
   do {
 
@@ -88,17 +126,20 @@ static int accept_connection(int server){
       perror("Accepting requests");
       // TODO: Check here if errno is set to EINTR, meaning a SIGUSR1 has been received and server must be stopped.
       // If EINTR is set, log server has been stopped. If not, server has been stopped due to error.
-      printf("Exitting the server.");
+      printf("Exitting the server. \n");
       return EXIT_FAILURE;
     }
 
     long clientArg = (long) client;
     if ( 0 != pthread_create(&newThread, NULL, serve_request, (void *) clientArg) )
     {
-      perror("Error creating thread.");
-      // TODO: log_result("Error creating thread");
+      strncpy(log_message, "Failure: Thread Creation", LOG_SIZE);
+      log_event(log_message);
+      perror("Thread Creation");
       break;
     }
+
+    printf("Thread returned \n");
 
   } while (!done);
 
@@ -110,13 +151,21 @@ static int wait_for_request(int server) {
   socklen_t clilen = sizeof(cli_addr);
 
   /* Accept a request and get a new connection for it */
+
   return accept(server, (struct sockaddr *) &cli_addr, &clilen);
 }
 /* -------------------------------------------------------------------------------------------------------*/
 
-int log_result(void){
+static int stop_server(int server) {
+  /* Close the socket */
+  return close(server);
+}
+/* -------------------------------------------------------------------------------------------------------*/
 
-  printf("Log Result \n");
-  return EXIT_SUCCESS;
+void log_event(char *log_message){
+
+  printf("%s \n", log_message);
+  // TODO: Properly log events, rather than printing to stdout.
+  return;
 
 }

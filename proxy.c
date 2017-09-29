@@ -36,7 +36,8 @@ int read_request(void){
 
   else{
     printf("Failure \n");
-    log_result();
+    //log_event();
+    return EXIT_SUCCESS;
    }
 
   return EXIT_SUCCESS;
@@ -165,11 +166,14 @@ static int respond(void){
   int success = rand() % 2;
   if (success == 0){
     printf("Success \n");
-    log_result(); }
+    // log_result();
+    return EXIT_SUCCESS;
+  }
 
   else{
     printf("Failure \n");
-    log_result();
+    // log_result();
+    return EXIT_SUCCESS;
    }
 
   return EXIT_SUCCESS;
