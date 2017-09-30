@@ -1,8 +1,4 @@
-/* Infrastucture of proxy web server. */
-
-/* NOTE: Currently appears to be working as expected.
-  A thread is created, then returns immediately after printing some information.*/
-
+/* Prototype of proxy web server. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,9 +33,8 @@ int main(void){
 
   /* Start a new server */
   if (-1 == (server = start_server(port))) {
-    perror("Starting server");
-    // strncpy(log_message, "start_server() failure", LOG_SIZE);
-    // log_event(log_message);
+    strncpy(log_message, "Failure: Start the Proxy Server.", LOG_SIZE);
+    log_event(log_message);
     return EXIT_FAILURE;
   }
 
@@ -59,13 +54,12 @@ static int start_server(int port){
 
   int server;
   struct sockaddr_in serv_addr;
-  //char log_message[LOG_SIZE];
+  char log_message[LOG_SIZE];
 
   /* Create a new TCP/IP socket */
   if (-1 == (server = socket(AF_INET, SOCK_STREAM, 0)) ) {
-    // strncpy(log_message, "start_server() failure: socket()", LOG_SIZE);
-    // log_event(log_message);
-    perror("Creating socket");
+    strncpy(log_message, "Failure: Create Socket.", LOG_SIZE);
+    log_event(log_message);
     return EXIT_FAILURE; }
 
   /* Prepare the endpoint */
@@ -76,16 +70,14 @@ static int start_server(int port){
 
   /* Bind the endpoint to the socket */
   if (-1 == bind(server, (struct sockaddr *) &serv_addr, sizeof(serv_addr))) {
-    // strncpy(log_message, "start_server() failure: bind()", LOG_SIZE);
-    // log_event(log_message);
-    perror("Binding endpoint to socket");
+    strncpy(log_message, "Failure: Bind the Endpoint to the Socket", LOG_SIZE);
+    log_event(log_message);
     return EXIT_FAILURE; }
 
   /* Prepare for listening */
   if (-1 == listen(server, 5)) {
-    // strncpy(log_message, "start_server() failure: listen()", LOG_SIZE);
-    // log_event(log_message);
-    perror("Prepare for listening");
+    strncpy(log_message, "Failure: Prepare for Listening.", LOG_SIZE);
+    log_event(log_message);
     return EXIT_FAILURE; }
 
   return server;
@@ -105,7 +97,6 @@ static int accept_connection(int server){
   if (pidFile == NULL) {
     strncpy(log_message, "Failure: Open proxy.pid", LOG_SIZE);
     log_event(log_message);
-    perror("Open proxy.pid");
     return EXIT_FAILURE;
     }
 
@@ -113,7 +104,6 @@ static int accept_connection(int server){
   if ( fprintf(pidFile, "%d", getpid() ) < 0){
     strncpy(log_message, "Failure: Write to proxy.pid", LOG_SIZE);
     log_event(log_message);
-    perror("Write to proxy.pid");
     return EXIT_FAILURE;
     }
 
@@ -135,7 +125,6 @@ static int accept_connection(int server){
     {
       strncpy(log_message, "Failure: Thread Creation", LOG_SIZE);
       log_event(log_message);
-      perror("Thread Creation");
       break;
     }
 
