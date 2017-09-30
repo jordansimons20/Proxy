@@ -15,7 +15,9 @@ void *serve_request(void *thread_info);
 void log_event(char *log_message);
 extern int master_pid;
 static const int LOG_SIZE = 200;
+static const int REQUEST_SIZE = 4096;
 
 #include <pthread.h>
 #include <fcntl.h>
+#include <strings.h>
 #endif

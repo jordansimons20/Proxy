@@ -5,7 +5,6 @@
 #include "proxy.h"
 #include <time.h>
 #include <unistd.h>
-#include <strings.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -113,7 +112,7 @@ static int accept_connection(int server){
 
     /* Wait for the next request */
     if (-1 == (client = wait_for_request(server))) {
-      perror("Accepting requests");
+      perror("Accepting requests"); //TODO: Logger, not perror()
       // TODO: Check here if errno is set to EINTR, meaning a SIGUSR1 has been received and server must be stopped.
       // If EINTR is set, log server has been stopped. If not, server has been stopped due to error.
       printf("Exitting the server. \n");
