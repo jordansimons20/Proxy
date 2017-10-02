@@ -20,4 +20,5 @@ static const int REQUEST_SIZE = 4096;
 #include <pthread.h>
 #include <fcntl.h>
 #include <strings.h>
+#include <signal.h>
 #endif

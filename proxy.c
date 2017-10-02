@@ -7,11 +7,12 @@
 //Function Prototypes
 static void read_request(int client, char *request_buffer);
 static int parse_request(void);
-static void authenticate(int client, char *request_buffer);
+static void authenticate();
 static int connect_to_host(void);
 static int send_request_to_host(void);
 static int get_response(void);
 static void respond(int client, char *content);
+
 
 //Functions
 /* -------------------------------------------------------------------------------------------------------*/
@@ -91,16 +92,14 @@ static int connect_to_host(void){
 }
 /* -------------------------------------------------------------------------------------------------------*/
 
-static void authenticate(int client, char *request_buffer){
+static void authenticate(){
 
   //TODO: Check if its a stop request, currently assumes any admin request is a stop.
 
-  respond(client, request_buffer);
-  //TODO: Send signal to stop server.
-  //NOTE: Final version won't respond before stopping.
+  /* Send signal to stop server, using global variable master_pid */
+  kill(master_pid, SIGUSR1);
 
   return;
-
 }
 /* -------------------------------------------------------------------------------------------------------*/
 
@@ -144,6 +143,8 @@ static int get_response(void){
 
 static void respond(int client, char *content){
 
+  // NOTE: Might work better to just pass *content with the HTML header specified, then strcat whatever else.
+
   char log_message[LOG_SIZE];
 	if (-1 == write(client, content, strlen(content))) {
     strncpy(log_message, "Failure: Respond to Client", LOG_SIZE);
@@ -153,22 +154,17 @@ static void respond(int client, char *content){
   return;
 }
 /* -------------------------------------------------------------------------------------------------------*/
-
+/* Called every time a thread is created. */
 void *serve_request(void *thread_info) {
 
   int client = (int) thread_info;
   char request_buffer[REQUEST_SIZE];
   char request_buffer_final[REQUEST_SIZE + 100];
 
-  printf("New thread! Client: %d \n", client);
-  //Called every time a thread is created.
-  //Equivalent of threadRoutine in my-server.c
-
   strcpy(request_buffer_final,"HTTP/1.x 200 OK\nContent-Type: text/html\n\n" );
 
   int request = rand() % 2;
   if (request == 0){
-    printf("Display Request \n");
 
     // NOTE: The following is a quick and dirty way to write sample content, simply to display something on the prototype. The finished version should more efficiently concatenate the actual content with the response/content type.
 
@@ -180,9 +176,7 @@ void *serve_request(void *thread_info) {
   }
 
   else{
-    printf("Stop Server \n");
-    strcat(request_buffer_final, "Server Stopped.");
-    authenticate(client, request_buffer_final);
+    authenticate();
     pthread_exit(NULL);
    }
 

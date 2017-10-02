@@ -9,12 +9,15 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <errno.h>
 
 
 //Function Prototypes
 static int start_server(int port);
 static int accept_connection(int server);
 static int wait_for_request(int server);
+static int stop_server(int server);
+static void signal_handler(int signum);
 
 //Global Variable(s)
 int master_pid;
@@ -86,10 +89,14 @@ static int start_server(int port){
 static int accept_connection(int server){
 
   int client;
-  int done = 0; // NOTE: This value will only change if the errno from accept returning -1 is set to EINTR (happens w/ SIGUSR1).
+  int done = 0;
   pthread_t newThread = NULL;
   FILE *pidFile;
   char log_message[LOG_SIZE];
+  struct sigaction sa;
+
+  /* Set global variable */
+  master_pid = getpid();
 
   /* Open proxy.pid */
   pidFile = fopen("/tmp/proxy.pid", "w");
@@ -100,7 +107,7 @@ static int accept_connection(int server){
     }
 
   /* Write master thread pid into proxy.pid */
-  if ( fprintf(pidFile, "%d", getpid() ) < 0){
+  if ( fprintf(pidFile, "%d", master_pid ) < 0){
     strncpy(log_message, "Failure: Write to proxy.pid", LOG_SIZE);
     log_event(log_message);
     return EXIT_FAILURE;
@@ -108,15 +115,36 @@ static int accept_connection(int server){
 
   fclose(pidFile);
 
+  /* Configure signal handler */
+  sa.sa_handler = signal_handler;
+  sigemptyset(&sa.sa_mask);
+  sa.sa_flags = 0;
+
+  if (sigaction(SIGUSR1, &sa, NULL) == -1) {
+    strncpy(log_message, "Failure: SIGUSR1", LOG_SIZE);
+    log_event(log_message);
+    return EXIT_FAILURE;
+  }
+
+
   do {
 
     /* Wait for the next request */
     if (-1 == (client = wait_for_request(server))) {
-      perror("Accepting requests"); //TODO: Logger, not perror()
-      // TODO: Check here if errno is set to EINTR, meaning a SIGUSR1 has been received and server must be stopped.
-      // If EINTR is set, log server has been stopped. If not, server has been stopped due to error.
-      printf("Exitting the server. \n");
-      return EXIT_FAILURE;
+
+      /* Check for SIGUSR1 by checking if errno is set to EINTR */
+      if(errno == EINTR) {
+        stop_server(server);
+        return EXIT_SUCCESS;
+      }
+
+      /* If we did not return from SIGUSR1, we have some unexpected error. */
+      else {
+        strncpy(log_message, "Failure: Accepting Requests", LOG_SIZE);
+        log_event(log_message);
+        stop_server(server);
+        return EXIT_FAILURE;
+      }
     }
 
     long clientArg = (long) client;
@@ -124,14 +152,11 @@ static int accept_connection(int server){
     {
       strncpy(log_message, "Failure: Thread Creation", LOG_SIZE);
       log_event(log_message);
-      break;
     }
-
-    printf("Thread returned \n");
 
   } while (!done);
 
-  return EXIT_SUCCESS;
+  return EXIT_FAILURE;
 }
 /* -------------------------------------------------------------------------------------------------------*/
 static int wait_for_request(int server) {
@@ -139,7 +164,6 @@ static int wait_for_request(int server) {
   socklen_t clilen = sizeof(cli_addr);
 
   /* Accept a request and get a new connection for it */
-
   return accept(server, (struct sockaddr *) &cli_addr, &clilen);
 }
 /* -------------------------------------------------------------------------------------------------------*/
@@ -147,6 +171,12 @@ static int wait_for_request(int server) {
 static int stop_server(int server) {
   /* Close the socket */
   return close(server);
+}
+/* -------------------------------------------------------------------------------------------------------*/
+
+static void signal_handler(int signum) {
+    /* We only want SIGUSR1 to trigger accept() to return */
+    return;
 }
 /* -------------------------------------------------------------------------------------------------------*/
 
