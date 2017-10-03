@@ -11,7 +11,6 @@
 #include <arpa/inet.h>
 #include <errno.h>
 
-
 //Function Prototypes
 static int start_server(int port);
 static int accept_connection(int server);
@@ -24,7 +23,7 @@ int master_pid;
 
 //Functions
 /* -------------------------------------------------------------------------------------------------------*/
-
+/* Starts server, and calls accept_connection() */
 int main(void){
 
   srand(time(NULL));
@@ -51,7 +50,7 @@ int main(void){
   return EXIT_SUCCESS;
 }
 /* -------------------------------------------------------------------------------------------------------*/
-
+/* Starts the server and prepares it for listening. */
 static int start_server(int port){
 
   int server;
@@ -85,7 +84,7 @@ static int start_server(int port){
   return server;
 }
 /* -------------------------------------------------------------------------------------------------------*/
-
+/* Main loop of program. Accepts connections and creates threads. */
 static int accept_connection(int server){
 
   int client;
@@ -126,7 +125,6 @@ static int accept_connection(int server){
     return EXIT_FAILURE;
   }
 
-
   do {
 
     /* Wait for the next request */
@@ -159,31 +157,28 @@ static int accept_connection(int server){
   return EXIT_FAILURE;
 }
 /* -------------------------------------------------------------------------------------------------------*/
+/* Accept a request and get a new connection for it */
 static int wait_for_request(int server) {
   struct sockaddr_in cli_addr;
   socklen_t clilen = sizeof(cli_addr);
 
-  /* Accept a request and get a new connection for it */
   return accept(server, (struct sockaddr *) &cli_addr, &clilen);
 }
 /* -------------------------------------------------------------------------------------------------------*/
-
+/* Close the socket */
 static int stop_server(int server) {
-  /* Close the socket */
   return close(server);
 }
 /* -------------------------------------------------------------------------------------------------------*/
-
-static void signal_handler(int signum) {
-    /* We only want SIGUSR1 to trigger accept() to return */
+/* We only want SIGUSR1 to trigger accept() to return */
+static void signal_handler( __attribute__((unused)) int signum) {
     return;
 }
 /* -------------------------------------------------------------------------------------------------------*/
-
+/* TODO: Properly log events, rather than printing to stdout. */
 void log_event(char *log_message){
 
   printf("%s \n", log_message);
-  // TODO: Properly log events, rather than printing to stdout.
   return;
 
 }

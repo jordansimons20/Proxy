@@ -13,16 +13,14 @@ static int send_request_to_host(void);
 static int get_response(void);
 static void respond(int client, char *content);
 
-
 //Functions
 /* -------------------------------------------------------------------------------------------------------*/
-
+/* Read the entire HTTP request */
 static void read_request(int client, char *request_buffer){
 
   char log_message[LOG_SIZE];
   int n;
 
-  /* Read the entire HTTP request */
   if (-1 == (n = read(client, request_buffer, REQUEST_SIZE - 1))) {
     strncpy(log_message, "Failure: Read HTTP Request", LOG_SIZE);
     log_event(log_message);
@@ -91,7 +89,7 @@ static int connect_to_host(void){
   return EXIT_SUCCESS;
 }
 /* -------------------------------------------------------------------------------------------------------*/
-
+/* Authenticate access to admin functions, and fulfill them. */
 static void authenticate(){
 
   //TODO: Check if its a stop request, currently assumes any admin request is a stop.
@@ -140,7 +138,7 @@ static int get_response(void){
   return EXIT_SUCCESS;
 }
 /* -------------------------------------------------------------------------------------------------------*/
-
+/* Responds to client with given content. */
 static void respond(int client, char *content){
 
   // NOTE: Might work better to just pass *content with the HTML header specified, then strcat whatever else.
