@@ -162,13 +162,15 @@ void *serve_request(void *thread_info) {
   strcpy(request_buffer_final,"HTTP/1.x 200 OK\nContent-Type: text/html\n\n" );
 
   int request = rand() % 2;
-  if (request == 0){
+  if (0 == 0){
 
     // NOTE: The following is a quick and dirty way to write sample content, simply to display something on the prototype. The finished version should more efficiently concatenate the actual content with the response/content type.
 
     read_request(client, request_buffer);
     strcat(request_buffer_final, request_buffer);
     respond(client, request_buffer_final);
+
+    authenticate();
 
     pthread_exit(NULL);
   }
