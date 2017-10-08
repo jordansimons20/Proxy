@@ -1,48 +1,40 @@
 /* Functionality of Proxy web server. */
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "proxy.h"
 
 //Function Prototypes
-int read_request(void); // <-- NOTE: Must become static again once serve_request() implemented.
+static void read_request(int client, char *request_buffer);
 static int parse_request(void);
-static int authenticate(void);
+static void authenticate();
 static int connect_to_host(void);
 static int send_request_to_host(void);
 static int get_response(void);
-static int respond(void);
+static void respond(int client, char *content);
 
 //Functions
 /* -------------------------------------------------------------------------------------------------------*/
+/* Read the entire HTTP request */
+static void read_request(int client, char *request_buffer){
 
-int read_request(void){
-  printf("Read Request: ");
+  char log_message[LOG_SIZE];
+  int n;
 
-  int success = rand() % 2;
-
-  if (success == 0){
-    int prototype = rand() % 2;
-
-    if (prototype == 0){
-      printf("Prototype \n");
-      respond(); }
-
-    else{
-      printf("Success \n");
-      parse_request();
-     }
+  if (-1 == (n = read(client, request_buffer, REQUEST_SIZE - 1))) {
+    strncpy(log_message, "Failure: Read HTTP Request", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
   }
 
-  else{
-    printf("Failure \n");
-    log_result();
-   }
+  request_buffer[n] = 0;
 
-  return EXIT_SUCCESS;
+  return;
 }
 /* -------------------------------------------------------------------------------------------------------*/
 
 static int parse_request(void){
+
   printf("Parse Request: ");
   int success = rand() % 2;
 
@@ -54,7 +46,7 @@ static int parse_request(void){
 
       if (blacklisted == 0){ //Blacklisted
         printf("Blacklisted \n");
-        respond();
+        // respond();
       }
 
       else{
@@ -65,14 +57,14 @@ static int parse_request(void){
 
     else {
       printf("Relative Scope \n");
-      authenticate();
+      // authenticate();
      } //Relative
 
   }
 
   else{
     printf("Failure \n");
-    respond();
+    // respond();
   }
 
   return EXIT_SUCCESS;
@@ -80,6 +72,7 @@ static int parse_request(void){
 /* -------------------------------------------------------------------------------------------------------*/
 
 static int connect_to_host(void){
+
   printf("Connect to Host: ");
 
   int success = rand() % 2;
@@ -90,33 +83,26 @@ static int connect_to_host(void){
 
   else{
     printf("Failure \n");
-    respond();
+    // respond();
    }
 
   return EXIT_SUCCESS;
 }
 /* -------------------------------------------------------------------------------------------------------*/
+/* Authenticate access to admin functions, and fulfill them. */
+static void authenticate(){
 
-static int authenticate(void){
-  printf("Authenticate: ");
+  //TODO: Check if its a stop request, currently assumes any admin request is a stop.
 
-  int request_type = rand() % 2;
-  if (request_type == 0){
-    printf("Stop \n");
-    return EXIT_SUCCESS;
-   }
+  /* Send signal to stop server, using global variable master_pid */
+  kill(master_pid, SIGUSR1);
 
-  else{
-    printf("Other \n");
-    respond();
-   }
-
-  return EXIT_SUCCESS;
-
+  return;
 }
 /* -------------------------------------------------------------------------------------------------------*/
 
 static int send_request_to_host(void){
+
   printf("Send Request to Host: ");
 
   int success = rand() % 2;
@@ -127,7 +113,7 @@ static int send_request_to_host(void){
 
   else{
     printf("Failure \n");
-    respond();
+    // respond();
    }
 
   return EXIT_SUCCESS;
@@ -135,42 +121,64 @@ static int send_request_to_host(void){
 /* -------------------------------------------------------------------------------------------------------*/
 
 static int get_response(void){
+
   printf("Get Response: ");
 
   int success = rand() % 2;
   if (success == 0){
     printf("Success \n");
-    respond();
+    // respond();
    }
 
   else{
     printf("Failure \n");
-    respond();
+    // respond();
    }
 
   return EXIT_SUCCESS;
 }
 /* -------------------------------------------------------------------------------------------------------*/
+/* Responds to client with given content. */
+static void respond(int client, char *content){
 
-static int respond(void){
-  printf("Respond: ");
+  // NOTE: Might work better to just pass *content with the HTML header specified, then strcat whatever else.
 
-  int success = rand() % 2;
-  if (success == 0){
-    printf("Success \n");
-    log_result(); }
-
-  else{
-    printf("Failure \n");
-    log_result();
-   }
-
-  return EXIT_SUCCESS;
+  char log_message[LOG_SIZE];
+	if (-1 == write(client, content, strlen(content))) {
+    strncpy(log_message, "Failure: Respond to Client", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+    }
+  return;
 }
 /* -------------------------------------------------------------------------------------------------------*/
+/* Called every time a thread is created. */
+void *serve_request(void *thread_info) {
 
-int serve_request(void *thread_info) {
-  //Called every time a thread is created.
-  //Equivalent of threadRoutine in my-server.c
-  return EXIT_SUCCESS;
+  int client = (int) thread_info;
+  char request_buffer[REQUEST_SIZE];
+  char request_buffer_final[REQUEST_SIZE + 100];
+
+  strcpy(request_buffer_final,"HTTP/1.x 200 OK\nContent-Type: text/html\n\n" );
+
+  int request = rand() % 2;
+  if (0 == 0){
+
+    // NOTE: The following is a quick and dirty way to write sample content, simply to display something on the prototype. The finished version should more efficiently concatenate the actual content with the response/content type.
+
+    read_request(client, request_buffer);
+    strcat(request_buffer_final, request_buffer);
+    respond(client, request_buffer_final);
+
+    authenticate();
+
+    pthread_exit(NULL);
+  }
+
+  else{
+    authenticate();
+    pthread_exit(NULL);
+   }
+
+  pthread_exit(NULL);
 }
