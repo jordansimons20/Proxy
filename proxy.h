@@ -13,6 +13,7 @@ void *serve_request(void *thread_info);
 // int get_response(void);
 // int respond(void);
 void log_event(char *log_message);
+int stop_server(int server);
 
 /* Constants */
 extern int master_pid;

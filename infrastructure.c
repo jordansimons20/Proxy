@@ -12,7 +12,6 @@
 static int start_server(int port);
 static int accept_connection(int server);
 static int wait_for_request(int server);
-static int stop_server(int server);
 static void signal_handler(int signum);
 
 //Global Variable(s)
@@ -160,11 +159,6 @@ static int wait_for_request(int server) {
   socklen_t clilen = sizeof(cli_addr);
 
   return accept(server, (struct sockaddr *) &cli_addr, &clilen);
-}
-/* -------------------------------------------------------------------------------------------------------*/
-/* Close the socket */
-static int stop_server(int server) {
-  return close(server);
 }
 /* -------------------------------------------------------------------------------------------------------*/
 /* We only want SIGUSR1 to trigger accept() to return */
