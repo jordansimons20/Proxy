@@ -1,10 +1,7 @@
 /* Prototype of proxy web server. */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "proxy.h"
 #include <time.h>
-#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

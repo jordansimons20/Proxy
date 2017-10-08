@@ -20,6 +20,9 @@ static const int LOG_SIZE = 200;
 static const int REQUEST_SIZE = 4096;
 
 /* Preprocessing */
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 #include <pthread.h>
 #include <fcntl.h>
 #include <strings.h>
