@@ -72,23 +72,6 @@ static void read_request(int client, char *request_buffer){
   // return;
 }
 /* -------------------------------------------------------------------------------------------------------*/
-/* Parse HTTP request */
-// static int parse_request(int client, char *request_buffer){
-
-  // // char log_message[LOG_SIZE];
-  // char request_buffer_final[REQUEST_SIZE + 100];
-  //
-  // /* Form response */
-  // strcpy(request_buffer_final,"HTTP/1.x 200 OK\nContent-Type: text/html\n\n" );
-  // strcat(request_buffer_final, request_buffer);
-  // respond(client, request_buffer_final);
-  //
-  // // free(request_buffer);
-  // authenticate();
-//
-//   return EXIT_SUCCESS;
-// }
-/* -------------------------------------------------------------------------------------------------------*/
 static int connect_to_host(void){
 
   printf("Connect to Host: ");
@@ -175,10 +158,11 @@ void *serve_request(void *thread_info) {
 
   int client = (int) thread_info;
   char request_buffer[REQUEST_SIZE];
-  struct request_t header_array[30]; //NOTE: Change size?
+  struct request_t header_array[100]; //NOTE: Maximum 100 headers per request.
 
-  header_array[0].header_name = "header_name";
-  header_array[0].header_value= "header_value";
+  /* For testing. */
+  // header_array[0].header_name = "header_name";
+  // header_array[0].header_value= "header_value";
 
   // char *request_buffer = (char *) malloc(REQUEST_SIZE);
 

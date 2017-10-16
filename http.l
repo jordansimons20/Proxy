@@ -18,7 +18,7 @@
 ^("GET"|"PUT"|"POST")" "([^ ]+)" HTTP/"([^ ]+)"\n" {
   //foo[0] = 12345;
   parse_method(); }
-^[^:\n]+": ".+"\n"+ { parse_header(yyextra); }
+^[^:\n]+": ".+"\n"+ { parse_header(yyextra, yytext); }
 .+ {
   puts(yytext);
   /* TODO: parse_body(); */ }
