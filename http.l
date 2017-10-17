@@ -12,25 +12,25 @@
 %option extra-type="struct request_t*"
 %%
 %{
-  struct request_t *headers = yyextra;
+  struct request_t *http_request = yyextra;
 %}
 
 ^("GET"|"PUT"|"POST")" "([^ ]+)" HTTP/"([^ ]+)"\n" {
-  parse_method(); }
-^[^:\n]+": ".+"\n"+ { parse_header(yyextra, yytext); }
+  parse_method(yyextra->method, yytext); }
+^[^:\n]+": ".+"\n"+ { parse_header(yyextra->headers, yytext); }
 .+ {
   puts(yytext);
   /* TODO: parse_body(); */ }
 %%
 
 /* Parse HTTP request */
-  int parse_request(int client, char *request_buffer, struct request_t *header_array) {
+  int parse_request(int client, char *request_buffer, struct request_t *http_request) {
 
   /* Configure lex setup */
   yyscan_t scanner;
   YY_BUFFER_STATE buf;
   yylex_init(&scanner);
-  yylex_init_extra((YY_EXTRA_TYPE)header_array, &scanner);
+  yylex_init_extra((YY_EXTRA_TYPE)http_request, &scanner);
   buf = yy_scan_string(request_buffer, scanner);
   // yyset_in(stdin, scanner);
 
@@ -43,12 +43,12 @@
 
   /* Testing: Print all parsed headers */
   for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
-    if(header_array[i].header_name != NULL && header_array[i].header_value != NULL) {
-      printf("Name:%s\n", header_array[i].header_name);
-      printf("Value:%s", header_array[i].header_value);
-      printf("/* ----------------------*/ \n");
-    }
-  }
+    if(http_request->headers[i].header_name != NULL && http_request->headers[i].header_value != NULL) {
+      printf("Name:%s\n", http_request->headers[i].header_name);
+      printf("Value:%s", http_request->headers[i].header_value);
+       printf("/* ----------------------*/ \n");
+     }
+   }
 
   char request_buffer_final[REQUEST_SIZE + 100];
 

@@ -154,10 +154,10 @@ void *serve_request(void *thread_info) {
 
   int client = (int) thread_info;
   char request_buffer[REQUEST_SIZE];
-  struct request_t header_array[HEADER_ARRAY_LENGTH];
+  struct request_t http_request;
 
   read_request(client, request_buffer);
-  parse_request(client, request_buffer, header_array);
+  parse_request(client, request_buffer, &http_request);
 
   //TODO: Free all malloc()'d memory.
 

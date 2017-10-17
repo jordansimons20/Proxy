@@ -4,18 +4,16 @@
 //Functions
 /* -------------------------------------------------------------------------------------------------------*/
 
-void parse_method(){
+void parse_method(char *method, char *method_line){
   printf("Method \n");
 }
 /* -------------------------------------------------------------------------------------------------------*/
 
-void parse_header(struct request_t *headers, char *header_line) {
+void parse_header(struct header_array *headers, char *header_line) {
   char *saveptr = header_line;
   char log_message[LOG_SIZE];
   char* name;
   int save_len;
-
-  //TODO: Trim extra white space (in header_value, i think).
 
   /* Parse the header. */
   name = strtok_r(saveptr, ":", &saveptr);
