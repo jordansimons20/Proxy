@@ -16,7 +16,6 @@
 %}
 
 ^("GET"|"PUT"|"POST")" "([^ ]+)" HTTP/"([^ ]+)"\n" {
-  //foo[0] = 12345;
   parse_method(); }
 ^[^:\n]+": ".+"\n"+ { parse_header(yyextra, yytext); }
 .+ {
@@ -26,9 +25,6 @@
 
 /* Parse HTTP request */
   int parse_request(int client, char *request_buffer, struct request_t *header_array) {
-
-    // char log_message[LOG_SIZE];
-
 
   /* Configure lex setup */
   yyscan_t scanner;
@@ -46,8 +42,6 @@
   yy_delete_buffer(buf, scanner);
   yylex_destroy(scanner);
 
-  //printf("%d\n", thread_data[0]);
-
   char request_buffer_final[REQUEST_SIZE + 100];
 
   /* Form response */
@@ -55,7 +49,6 @@
   strcat(request_buffer_final, request_buffer);
   respond(client, request_buffer_final);
 
-  // free(request_buffer);
   authenticate();
   return EXIT_SUCCESS;
 }

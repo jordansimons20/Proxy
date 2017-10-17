@@ -29,6 +29,7 @@ static const int LOG_SIZE = 200;
 // static const int REQUEST_SIZE = 65536;
 static const int REQUEST_SIZE = 8192;
 static const int HTTP_HEADER_NAME_SIZE = 120;
+static const int HEADER_ARRAY_LENGTH = 100; // Maximum allowed number of headers in a request.
 
 /* Preprocessing */
 #include <stdio.h>

@@ -7,13 +7,9 @@
 
 //Function Prototypes
 static void read_request(int client, char *request_buffer);
-// static int parse_request(int client, char *request_buffer);
-// static void authenticate();
 static int connect_to_host(void);
 static int send_request_to_host(void);
 static int get_response(void);
-// static void respond(int client, char *content);
-
 
 //Functions
 /* -------------------------------------------------------------------------------------------------------*/
@@ -158,22 +154,19 @@ void *serve_request(void *thread_info) {
 
   int client = (int) thread_info;
   char request_buffer[REQUEST_SIZE];
-  struct request_t header_array[100]; //NOTE: Maximum 100 headers per request.
-
-  /* For testing. */
-  // header_array[0].header_name = "header_name";
-  // header_array[0].header_value= "header_value";
-
-  // char *request_buffer = (char *) malloc(REQUEST_SIZE);
-
-  // strcpy(request_buffer_final,"HTTP/1.x 200 OK\nContent-Type: text/html\n\n" );
+  struct request_t header_array[HEADER_ARRAY_LENGTH];
 
   read_request(client, request_buffer);
   parse_request(client, request_buffer, header_array);
-  // strcat(request_buffer_final, request_buffer);
-  // respond(client, request_buffer_final);
 
-  // authenticate();
+  /* Testing: Print all parsed headers */
+  for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
+    if(header_array[i].header_name != NULL && header_array[i].header_value != NULL) {
+      printf("Header: %s \n Value: %s \n", header_array[i].header_name, header_array[i].header_value);
+    }
+  }
+
+  //TODO: Free all malloc()'d memory.
 
   pthread_exit(NULL);
 }
