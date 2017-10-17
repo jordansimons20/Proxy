@@ -13,6 +13,7 @@ void parse_header(struct request_t *headers, char *header_line) {
   char *saveptr = header_line;
   char log_message[LOG_SIZE];
   char* name;
+  int save_len;
 
   //TODO: Trim extra white space (in header_value, i think).
 
@@ -39,7 +40,13 @@ void parse_header(struct request_t *headers, char *header_line) {
       }
       strcpy(headers[i].header_name, name);
 
-      headers[i].header_value = (char *) malloc(strlen(saveptr));
+      /* Trim leading whitespace on header value. */
+      // NOTE: This approach eliminates the odd behavior when trimming the space, but perhaps there is a more elegant way of doing it?
+      save_len = strlen(saveptr);
+      saveptr++;
+
+      // headers[i].header_value = (char *) malloc(strlen(saveptr));
+      headers[i].header_value = (char *) malloc(save_len);
       if (headers[i].header_value == NULL) {
         strncpy(log_message, "Failure: malloc() header_value", LOG_SIZE);
         log_event(log_message);

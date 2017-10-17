@@ -29,11 +29,10 @@
   /* Configure lex setup */
   yyscan_t scanner;
   YY_BUFFER_STATE buf;
-  // int thread_data[10]; //TODO: Replace with pointer to request_t struct
   yylex_init(&scanner);
   yylex_init_extra((YY_EXTRA_TYPE)header_array, &scanner);
-  // yyset_in(stdin, scanner);
   buf = yy_scan_string(request_buffer, scanner);
+  // yyset_in(stdin, scanner);
 
   /* Actually parse the HTTP request */
   yylex(scanner);
@@ -41,6 +40,15 @@
   /* We are done with the scanner and buf */
   yy_delete_buffer(buf, scanner);
   yylex_destroy(scanner);
+
+  /* Testing: Print all parsed headers */
+  for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
+    if(header_array[i].header_name != NULL && header_array[i].header_value != NULL) {
+      printf("Name:%s\n", header_array[i].header_name);
+      printf("Value:%s", header_array[i].header_value);
+      printf("/* ----------------------*/ \n");
+    }
+  }
 
   char request_buffer_final[REQUEST_SIZE + 100];
 

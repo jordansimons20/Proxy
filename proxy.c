@@ -159,13 +159,6 @@ void *serve_request(void *thread_info) {
   read_request(client, request_buffer);
   parse_request(client, request_buffer, header_array);
 
-  /* Testing: Print all parsed headers */
-  for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
-    if(header_array[i].header_name != NULL && header_array[i].header_value != NULL) {
-      printf("Header: %s \n Value: %s \n", header_array[i].header_name, header_array[i].header_value);
-    }
-  }
-
   //TODO: Free all malloc()'d memory.
 
   pthread_exit(NULL);
