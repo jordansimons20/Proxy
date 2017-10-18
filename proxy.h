@@ -27,7 +27,7 @@ void authenticate();
 void respond(int client, char *content);
 void log_event(char *log_message);
 int stop_server(int server);
-void parse_method(char *method, char *method_line);
+void parse_method(char **method, char *method_line);
 void parse_header(struct header_array *headers, char *header_line);
 
 /* Preprocessing */
