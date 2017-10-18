@@ -16,7 +16,7 @@
 %}
 
 ^("GET"|"PUT"|"POST")" "([^ ]+)" HTTP/"([^ ]+)"\n" {
-  parse_method(yyextra->method, yytext); }
+  parse_method(&yyextra->method, yytext); }
 ^[^:\n]+": ".+"\n"+ { parse_header(yyextra->headers, yytext); }
 .+ {
   puts(yytext);
@@ -41,12 +41,13 @@
   yy_delete_buffer(buf, scanner);
   yylex_destroy(scanner);
 
-  /* Testing: Print all parsed headers */
+  /* Testing: Print method and all parsed headers */
+  printf("%s", http_request->method);
   for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
     if(http_request->headers[i].header_name != NULL && http_request->headers[i].header_value != NULL) {
       printf("Name:%s\n", http_request->headers[i].header_name);
       printf("Value:%s", http_request->headers[i].header_value);
-       printf("/* ----------------------*/ \n");
+      printf("/* ----------------------*/ \n");
      }
    }
 

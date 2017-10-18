@@ -4,8 +4,20 @@
 //Functions
 /* -------------------------------------------------------------------------------------------------------*/
 
-void parse_method(char *method, char *method_line){
-  printf("Method \n");
+void parse_method(char **method, char *method_line){
+  char log_message[LOG_SIZE];
+  //TODO: Parse the string(?)
+
+  /* Save the method into the structure. */
+  *method = (char *) malloc(strlen(method_line));
+  if (*method == NULL) {
+    strncpy(log_message, "Failure: malloc() method", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+  strcpy(*method, method_line);
+
+  return;
 }
 /* -------------------------------------------------------------------------------------------------------*/
 
@@ -55,4 +67,5 @@ void parse_header(struct header_array *headers, char *header_line) {
       break;
     }
   }
+  return;
 }
