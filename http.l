@@ -14,7 +14,7 @@
 %{
   struct request_t *http_request = yyextra;
 %}
-
+^"HTTP/"[^ ]+" "[0-9]{3}" ".+"\n"
 ^("GET"|"PUT"|"POST")" "([^ ]+)" HTTP/"([^ ]+)"\n" {
   parse_method(&yyextra->method, yytext); }
 ^[^:\n]+": ".+"\n"+ { parse_header(yyextra->headers, yytext); }
@@ -42,7 +42,7 @@
   yylex_destroy(scanner);
 
   /* Testing: Print method and all parsed headers */
-  printf("%s", http_request->method);
+  // printf("%s", http_request->method);
   for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
     if(http_request->headers[i].header_name != NULL && http_request->headers[i].header_value != NULL) {
       printf("Name:%s\n", http_request->headers[i].header_name);
