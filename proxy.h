@@ -14,9 +14,16 @@ struct header_array {
   char *header_value;
 };
 
+/* For each HTTP method line */
+struct method_line{
+  char *method_type;
+  char *destination_uri;
+  char *http_protocol;
+};
+
 /* Structure for every HTTP request/response */
 struct request_t {
-  char *method;
+  struct method_line method_info;
   struct header_array headers[HEADER_ARRAY_LENGTH];
 };
 
@@ -27,7 +34,7 @@ void authenticate();
 void respond(int client, char *content);
 void log_event(char *log_message);
 int stop_server(int server);
-void parse_method(char **method, char *method_line);
+void parse_method(struct method_line *method_line, char *http_line);
 void parse_header(struct header_array *headers, char *header_line);
 
 /* Preprocessing */

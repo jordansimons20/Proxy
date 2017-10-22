@@ -4,18 +4,70 @@
 //Functions
 /* -------------------------------------------------------------------------------------------------------*/
 
-void parse_method(char **method, char *method_line){
+void parse_method(struct method_line *method_line, char *http_line){
   char log_message[LOG_SIZE];
-  //TODO: Parse the string(?)
+  char *saveptr = http_line;
+  char *name;
+  char *destination;
+  char *protocol;
 
-  /* Save the method into the structure. */
-  *method = (char *) malloc(strlen(method_line));
-  if (*method == NULL) {
-    strncpy(log_message, "Failure: malloc() method", LOG_SIZE);
+  /* Parse the method name. */
+  name = strtok_r(saveptr, " ", &saveptr);
+  if(name == NULL) {
+    strncpy(log_message, "Failure: Parsing HTTP Method", LOG_SIZE);
+    perror("parse method name: ");
+    log_event(log_message);
+    // respond('400 BAD REQUEST');
+    pthread_exit(NULL);
+  }
+
+  /* Parse the destination URI. */
+  destination = strtok_r(saveptr, " ", &saveptr);
+  if(name == NULL) {
+    strncpy(log_message, "Failure: Parsing HTTP Method", LOG_SIZE);
+    perror("parse method name: ");
+    log_event(log_message);
+    // respond('400 BAD REQUEST');
+    pthread_exit(NULL);
+  }
+
+  /* Parse the Protocol. */
+  protocol = strtok_r(saveptr, " ", &saveptr);
+  if(name == NULL) {
+    strncpy(log_message, "Failure: Parsing HTTP Method", LOG_SIZE);
+    perror("parse method name: ");
+    log_event(log_message);
+    // respond('400 BAD REQUEST');
+    pthread_exit(NULL);
+  }
+
+  /* Save the method type into the structure. */
+  method_line->method_type = (char *) malloc(strlen(name));
+  if (method_line->method_type == NULL) {
+    strncpy(log_message, "Failure: malloc() method_type", LOG_SIZE);
     log_event(log_message);
     pthread_exit(NULL);
   }
-  strcpy(*method, method_line);
+  strcpy(method_line->method_type, name);
+
+  /* Save the destination uri into the structure. */
+  method_line->destination_uri = (char *) malloc(strlen(destination));
+  if (method_line->destination_uri== NULL) {
+    strncpy(log_message, "Failure: malloc() destination_uri", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+  //TODO: Further parse destination_uri, possibly introduce another struct for it.
+  strcpy(method_line->destination_uri, destination);
+
+  /* Save the http protocol into the structure. */
+  method_line->http_protocol = (char *) malloc(strlen(protocol));
+  if (method_line->http_protocol == NULL) {
+    strncpy(log_message, "Failure: malloc() destination_uri", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+  strcpy(method_line->http_protocol, protocol);
 
   return;
 }
@@ -30,7 +82,7 @@ void parse_header(struct header_array *headers, char *header_line) {
   /* Parse the header. */
   name = strtok_r(saveptr, ":", &saveptr);
   if(name == NULL) {
-    strncpy(log_message, "Failure: Parsing HTTP", LOG_SIZE);
+    strncpy(log_message, "Failure: Parsing HTTP Header", LOG_SIZE);
     log_event(log_message);
     // respond('400 BAD REQUEST');
     pthread_exit(NULL);
