@@ -54,13 +54,5 @@
      }
    }
 
-  char request_buffer_final[REQUEST_SIZE + 100];
-
-  /* Form response */
-  strcpy(request_buffer_final,"HTTP/1.x 200 OK\nContent-Type: text/html\n\n" );
-  strcat(request_buffer_final, request_buffer);
-  respond(client, request_buffer_final);
-
-  authenticate();
   return EXIT_SUCCESS;
 }

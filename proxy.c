@@ -6,15 +6,15 @@
 #include <errno.h>
 
 //Function Prototypes
-static void read_request(int client, char *request_buffer);
+static void read_data(int client, char *request_buffer);
 static int connect_to_host(void);
 static int send_request_to_host(void);
 static int get_response(void);
 
 //Functions
 /* -------------------------------------------------------------------------------------------------------*/
-/* Read the entire HTTP request */
-static void read_request(int client, char *request_buffer){
+/* Read HTTP request/response headers */
+static void read_data(int client, char *request_buffer){
 
   char log_message[LOG_SIZE];
   int n;
@@ -154,12 +154,32 @@ void *serve_request(void *thread_info) {
 
   int client = (int) thread_info;
   char request_buffer[REQUEST_SIZE];
+  char request_buffer_final[REQUEST_SIZE + 100];
   struct request_t http_request;
 
-  read_request(client, request_buffer);
+  read_data(client, request_buffer);
   parse_request(client, request_buffer, &http_request);
 
-  //TODO: Free all malloc()'d memory.
+  /* Form response */
+  strcpy(request_buffer_final,"HTTP/1.x 200 OK\nContent-Type: text/html\n\n" );
+  strcat(request_buffer_final, request_buffer);
+  respond(client, request_buffer_final);
+
+  authenticate();
+
+  /* Free all malloc()'d memory */
+  free(http_request.method_info.method_type);
+  free(http_request.method_info.destination_uri);
+  free(http_request.method_info.http_protocol);
+
+  /* Only free malloc'd indeces */
+  for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
+    if(http_request.headers[i].header_name != NULL && http_request.headers[i].header_value != NULL)
+    {
+      free(http_request.headers[i].header_name);
+      free(http_request.headers[i].header_value);
+    }
+   }
 
   pthread_exit(NULL);
 }
