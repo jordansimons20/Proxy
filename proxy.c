@@ -6,7 +6,7 @@
 #include <errno.h>
 
 //Function Prototypes
-static void read_data(int client, char *request_buffer);
+static void read_data(int client, char **request_buffer);
 static int connect_to_host(void);
 static int send_request_to_host(void);
 static int get_response(void);
@@ -14,58 +14,46 @@ static int get_response(void);
 //Functions
 /* -------------------------------------------------------------------------------------------------------*/
 /* Read HTTP request/response headers */
-static void read_data(int client, char *request_buffer){
+static void read_data(int client, char **request_buffer){
 
   char log_message[LOG_SIZE];
   int n;
-  // int request_length = REQUEST_SIZE;
-  // int read_length = 0;
-  // int opts;
+  int read_length = 0;
+  char *needle;
 
-  if (-1 == (n = read(client, request_buffer, REQUEST_SIZE - 1))) {
-    strncpy(log_message, "Failure: Read HTTP Request", LOG_SIZE);
-    log_event(log_message);
-    pthread_exit(NULL);
+  while (0 == 0) {
+
+    n = read(client, *request_buffer + read_length, READ_SIZE);
+
+    if(n == -1) {
+      strncpy(log_message, "Failure: Read HTTP Request", LOG_SIZE);
+      log_event(log_message);
+      free(*request_buffer);
+      pthread_exit(NULL);
+    }
+
+    /* Keep track of current position */
+    read_length += n;
+
+    /* Check for the end of the HTTP request. */
+    /* Marked by an empty line preceding a CRLF ("\n\r\n"). */
+    needle = strstr(*request_buffer, "\n\r\n");
+    if (needle != NULL) {
+      //TODO: memcpy anything after needle into the body
+      //printf("%s", request_buffer);
+      break;
+    }
+
+    /* Realloc enough memory for next read() */
+    *request_buffer = realloc(*request_buffer, strlen(*request_buffer) + READ_SIZE);
+    if (*request_buffer == NULL) {
+      strncpy(log_message, "Failure: realloc() request_buffer", LOG_SIZE);
+      log_event(log_message);
+      pthread_exit(NULL);
+    }
   }
 
-  request_buffer[n] = 0;
-
   return;
-
-  /* NOTE: Dynamic reading incomplete:
-        -read/recv hangs or errors out
-        - Need to implement actual realloc() if the loop works.
-        - Maybe try select()?*/
-
-  // opts = fcntl(client, F_SETFL, O_NONBLOCK);
-  // // opts &= ~O_NONBLOCK;
-  //
-  // /* Loop until we read the entire request */
-  // // while (0 != (n = read(client, request_buffer, REQUEST_SIZE - 1))) {
-  // while (-1 != (n = recv(client, request_buffer, 100- 1, 0))) {
-  //
-  //   /* Keep track of position for terminating character */
-  //   read_length += n;
-  //   printf("Bytes read: %d \n", n);
-  // }
-  //
-  //
-  //
-  // if(n == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
-  //   request_buffer[read_length] = 0;
-  //   printf("inside if \n");
-  // }
-  //
-  // else{
-  //   strncpy(log_message, "Failure: Read HTTP Request", LOG_SIZE);
-  //   log_event(log_message);
-  //   free(request_buffer);
-  //   pthread_exit(NULL);
-  // }
-  //
-  // printf("help \n");
-  //
-  // return;
 }
 /* -------------------------------------------------------------------------------------------------------*/
 static int connect_to_host(void){
@@ -153,14 +141,22 @@ void respond(int client, char *content){
 void *serve_request(void *thread_info) {
 
   int client = (int) thread_info;
-  char request_buffer[REQUEST_SIZE];
-  char request_buffer_final[REQUEST_SIZE + 100];
+  char log_message[LOG_SIZE];
+  char request_buffer_final[REQUEST_SIZE + 100]; //NOTE: This could possibly cause memory issues, if the malloc'd request_buffer exceeds this size. While this is unlikely during these early phases, keep this in mind.
   struct request_t http_request;
+  char *request_buffer = NULL;
 
-  read_data(client, request_buffer);
+  request_buffer = (char *) malloc(READ_SIZE);
+  if (request_buffer == NULL) {
+    strncpy(log_message, "Failure: malloc() request_buffer", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+
+  read_data(client, &request_buffer);
   parse_request(client, request_buffer, &http_request);
 
-  /* Form response */
+  /* Form sample response */
   strcpy(request_buffer_final,"HTTP/1.x 200 OK\nContent-Type: text/html\n\n" );
   strcat(request_buffer_final, request_buffer);
   respond(client, request_buffer_final);
@@ -168,6 +164,7 @@ void *serve_request(void *thread_info) {
   authenticate();
 
   /* Free all malloc()'d memory */
+  free(request_buffer);
   free(http_request.method_info.method_type);
   free(http_request.method_info.destination_uri);
   free(http_request.method_info.http_protocol);
