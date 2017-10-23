@@ -6,7 +6,7 @@
 #include <errno.h>
 
 //Function Prototypes
-static void read_data(int client, char **request_buffer);
+static void read_data(int client, char **request_buffer, char *body_beginning);
 static int connect_to_host(void);
 static int send_request_to_host(void);
 static int get_response(void);
@@ -14,7 +14,7 @@ static int get_response(void);
 //Functions
 /* -------------------------------------------------------------------------------------------------------*/
 /* Read HTTP request/response headers */
-static void read_data(int client, char **request_buffer){
+static void read_data(int client, char **request_buffer, char *body_beginning){
 
   char log_message[LOG_SIZE];
   int n;
@@ -39,8 +39,14 @@ static void read_data(int client, char **request_buffer){
     /* Marked by an empty line preceding a CRLF ("\n\r\n"). */
     needle = strstr(*request_buffer, "\n\r\n");
     if (needle != NULL) {
-      //TODO: memcpy anything after needle into the body
-      //printf("%s", request_buffer);
+
+      /* Add terminating null */
+      strcpy(*request_buffer + read_length, "\0");
+
+      /* We bypass the "\n\r\n" needle points to, and copy beginning of the message body */
+      strcpy(body_beginning, needle + 3);
+
+      /* NOTE: The beginning of the body is still in the request_buffer. This shouldn't be an issue, but keep note of this just in case. */
       break;
     }
 
@@ -144,6 +150,7 @@ void *serve_request(void *thread_info) {
   char log_message[LOG_SIZE];
   char request_buffer_final[REQUEST_SIZE + 100]; //NOTE: This could possibly cause memory issues, if the malloc'd request_buffer exceeds this size. While this is unlikely during these early phases, keep this in mind.
   struct request_t http_request;
+  char body_overflow[READ_SIZE];
   char *request_buffer = NULL;
 
   request_buffer = (char *) malloc(READ_SIZE);
@@ -153,7 +160,9 @@ void *serve_request(void *thread_info) {
     pthread_exit(NULL);
   }
 
-  read_data(client, &request_buffer);
+  read_data(client, &request_buffer, body_overflow);
+  printf("Body Overflow: %s\n", body_overflow);
+  // printf("Buffer: %s\n", request_buffer);
   parse_request(client, request_buffer, &http_request);
 
   /* Form sample response */
