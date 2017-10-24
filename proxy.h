@@ -37,7 +37,7 @@ struct request_t {
 
 /* Function Prototypes */
 void *serve_request(void *thread_info);
-int parse_request(int client, char *request_buffer, struct request_t *http_request);
+int parse_message(int client, char *request_buffer, struct request_t *http_request);
 void authenticate();
 void respond(int client, char *content);
 void log_event(char *log_message);

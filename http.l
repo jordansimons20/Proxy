@@ -24,8 +24,8 @@
   /* TODO: parse_body(); */ }
 %%
 
-/* Parse HTTP request */
-  int parse_request(int client, char *request_buffer, struct request_t *http_request) {
+/* Parse HTTP message */
+  int parse_message(int client, char *message_buffer, struct request_t *http_request) {
 
   char *cl_conversion;
   char log_message[LOG_SIZE];
@@ -35,9 +35,9 @@
   YY_BUFFER_STATE buf;
   yylex_init(&scanner);
   yylex_init_extra((YY_EXTRA_TYPE)http_request, &scanner);
-  buf = yy_scan_string(request_buffer, scanner);
+  buf = yy_scan_string(message_buffer, scanner);
 
-  /* Actually parse the HTTP request */
+  /* Actually parse the HTTP message */
   yylex(scanner);
 
   /* We are done with the scanner and buf */
