@@ -7,6 +7,7 @@
 
 //Function Prototypes
 static void read_data(int client, char **request_buffer, char *body_beginning);
+static void read_body(int client, char *body_buffer, char *body_overflow, long content_length);
 static int connect_to_host(void);
 static int send_request_to_host(void);
 static int get_response(void);
@@ -40,13 +41,14 @@ static void read_data(int client, char **request_buffer, char *body_beginning){
     needle = strstr(*request_buffer, "\n\r\n");
     if (needle != NULL) {
 
-      /* Add terminating null */
-      strcpy(*request_buffer + read_length, "\0");
-
       /* We bypass the "\n\r\n" needle points to, and copy beginning of the message body */
       strcpy(body_beginning, needle + 3);
 
-      /* NOTE: The beginning of the body is still in the request_buffer. This shouldn't be an issue, but keep note of this just in case. */
+      /* Add terminating null after the "\n\r\n" occurs */
+      strcpy(*request_buffer + read_length - strlen(body_beginning), "\0");
+
+      //NOTE: The strcpy logic appears to be correct, based on testing. However, check back here if issues arise later.
+
       break;
     }
 
@@ -58,6 +60,32 @@ static void read_data(int client, char **request_buffer, char *body_beginning){
       pthread_exit(NULL);
     }
   }
+
+  return;
+}
+/* -------------------------------------------------------------------------------------------------------*/
+/* Read HTTP message body. */
+static void read_body(int client, char *body_buffer, char *body_overflow, long content_length) {
+
+  char log_message[LOG_SIZE];
+  int n;
+  int overflow_size = strlen(body_overflow);
+
+  strcpy(body_buffer, body_overflow);
+
+  /* Subtract data already read in read_data() */
+  content_length -= overflow_size;
+
+  if (-1 == (n = read(client, body_buffer + overflow_size, content_length))) {
+    strncpy(log_message, "Failure: Read HTTP Body", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+
+  body_buffer[n + overflow_size] = 0;
+
+  //NOTE: Use this to print non-null terminated string. In case having the null becomes an issue.
+  // fwrite(body_buffer, sizeof(char), n + overflow_size, stdout);
 
   return;
 }
@@ -148,7 +176,6 @@ void *serve_request(void *thread_info) {
 
   int client = (int) thread_info;
   char log_message[LOG_SIZE];
-  char request_buffer_final[REQUEST_SIZE + 100]; //NOTE: This could possibly cause memory issues, if the malloc'd request_buffer exceeds this size. While this is unlikely during these early phases, keep this in mind.
   struct request_t http_request;
   http_request.data_type.is_response = 1; //Default to request.
   char body_overflow[READ_SIZE];
@@ -162,20 +189,34 @@ void *serve_request(void *thread_info) {
   }
 
   read_data(client, &request_buffer, body_overflow);
-  // printf("Body Overflow: %s\n", body_overflow);
-  // printf("Buffer: %s\n", request_buffer);
+  printf("Body Overflow:%s\n", body_overflow);
   parse_request(client, request_buffer, &http_request);
 
-  printf("is_response: %d\n", http_request.data_type.is_response);
-  printf("content_length: %ld\n", http_request.data_type.content_length);
+  /* Store the content_length-sized message body, plus a terminating null. */
+  char body_buffer[http_request.data_type.content_length + 1];
 
   /* Read message body if the data is a response (or POST request) */
-  //TODO: Check http_request.data_type.is_response
-  //TODO: create/call read_body(body_buffer, body_overflow, content_length);
+  if(http_request.data_type.is_response == 0) {
+
+    read_body(client, body_buffer, body_overflow, http_request.data_type.content_length);
+    printf("Entire Body:%s\n", body_buffer);
+  }
+
+  char http_message[strlen(request_buffer) + strlen(body_buffer)];
+
+  strcpy(http_message, request_buffer);
+  if (http_request.data_type.is_response == 0) {
+    strcat(http_message, body_buffer);
+  }
+
+  printf("Full HTTP Message:\n%s\n", http_message);
+
+  char request_buffer_final[strlen(http_message) + 100];
 
   /* Form sample response */
   strcpy(request_buffer_final,"HTTP/1.x 200 OK\nContent-Type: text/html\n\n" );
-  strcat(request_buffer_final, request_buffer);
+  strcat(request_buffer_final, http_message);
+
   respond(client, request_buffer_final);
 
   authenticate();

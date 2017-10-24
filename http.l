@@ -66,23 +66,22 @@
           log_event(log_message);
           pthread_exit(NULL);
         }
-
       }
      }
    }
 
-  /* Testing: Print method and all parsed headers */
-  printf("method_line:%s\n", http_request->method_info.method_type );
-  printf("destination_uri:%s\n", http_request->method_info.destination_uri );
-  printf("http_protocol:%s\n", http_request->method_info.http_protocol );
-
-  for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
-    if(http_request->headers[i].header_name != NULL && http_request->headers[i].header_value != NULL) {
-      printf("Name:%s\n", http_request->headers[i].header_name);
-      printf("Value:%s", http_request->headers[i].header_value);
-      printf("/* ----------------------*/ \n");
-     }
-   }
+  // /* Testing: Print method and all parsed headers */
+  // printf("method_line:%s\n", http_request->method_info.method_type );
+  // printf("destination_uri:%s\n", http_request->method_info.destination_uri );
+  // printf("http_protocol:%s\n", http_request->method_info.http_protocol );
+  //
+  // for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
+  //   if(http_request->headers[i].header_name != NULL && http_request->headers[i].header_value != NULL) {
+  //     printf("Name:%s\n", http_request->headers[i].header_name);
+  //     printf("Value:%s", http_request->headers[i].header_value);
+  //     printf("/* ----------------------*/ \n");
+  //    }
+  //  }
 
   return EXIT_SUCCESS;
 }
