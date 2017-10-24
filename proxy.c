@@ -150,6 +150,7 @@ void *serve_request(void *thread_info) {
   char log_message[LOG_SIZE];
   char request_buffer_final[REQUEST_SIZE + 100]; //NOTE: This could possibly cause memory issues, if the malloc'd request_buffer exceeds this size. While this is unlikely during these early phases, keep this in mind.
   struct request_t http_request;
+  http_request.data_type.is_response = 1; //Default to request.
   char body_overflow[READ_SIZE];
   char *request_buffer = NULL;
 
@@ -161,9 +162,16 @@ void *serve_request(void *thread_info) {
   }
 
   read_data(client, &request_buffer, body_overflow);
-  printf("Body Overflow: %s\n", body_overflow);
+  // printf("Body Overflow: %s\n", body_overflow);
   // printf("Buffer: %s\n", request_buffer);
   parse_request(client, request_buffer, &http_request);
+
+  printf("is_response: %d\n", http_request.data_type.is_response);
+  printf("content_length: %ld\n", http_request.data_type.content_length);
+
+  /* Read message body if the data is a response (or POST request) */
+  //TODO: Check http_request.data_type.is_response
+  //TODO: create/call read_body(body_buffer, body_overflow, content_length);
 
   /* Form sample response */
   strcpy(request_buffer_final,"HTTP/1.x 200 OK\nContent-Type: text/html\n\n" );

@@ -22,10 +22,17 @@ struct method_line{
   char *http_protocol;
 };
 
+/* Contains if HTTP message is request or response */
+struct http_type {
+  int is_response;
+  long content_length; // Responses/POST requests only.
+};
+
 /* Structure for every HTTP request/response */
 struct request_t {
   struct method_line method_info;
   struct header_array headers[HEADER_ARRAY_LENGTH];
+  struct http_type data_type;
 };
 
 /* Function Prototypes */
