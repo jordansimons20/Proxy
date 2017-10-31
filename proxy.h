@@ -3,7 +3,6 @@
 /* Constants */
 extern int master_pid;
 static const int LOG_SIZE = 200;
-// static const int REQUEST_SIZE = 65536;
 static const int REQUEST_SIZE = 8192;
 static const int HTTP_HEADER_NAME_SIZE = 120;
 static const int HEADER_ARRAY_LENGTH = 100; // Maximum allowed number of headers in a request.
@@ -15,11 +14,18 @@ struct header_array {
   char *header_value;
 };
 
-/* For each HTTP method line */
+/* For each HTTP request method line */
 struct method_line{
   char *method_type;
   char *destination_uri;
   char *http_protocol;
+};
+
+/* For each HTTP response status line */
+struct status_line{
+  char *http_protocol;
+  char *status_code;
+  char *reason_phrase;
 };
 
 /* Contains if HTTP message is request or response */
@@ -29,19 +35,21 @@ struct http_type {
 };
 
 /* Structure for every HTTP request/response */
-struct request_t {
-  struct method_line method_info;
+struct message_t {
+  struct method_line request_method_info; //Requests only
+  struct status_line response_status_line; //Responses only
   struct header_array headers[HEADER_ARRAY_LENGTH];
   struct http_type data_type;
 };
 
 /* Function Prototypes */
 void *serve_request(void *thread_info);
-int parse_message(int client, char *request_buffer, struct request_t *http_request);
+int parse_message(int client, char *request_buffer, struct message_t *http_request);
 void authenticate();
 void respond(int client, char *content);
 void log_event(char *log_message);
 int stop_server(int server);
+void parse_status_line(struct status_line *status_line, char *http_line);
 void parse_method(struct method_line *method_line, char *http_line);
 void parse_header(struct header_array *headers, char *header_line);
 

@@ -176,7 +176,7 @@ void *serve_request(void *thread_info) {
 
   int client = (int) thread_info;
   char log_message[LOG_SIZE];
-  struct request_t http_request;
+  struct message_t http_request;
   http_request.data_type.is_response = 1; //Default to request.
   char body_overflow[READ_SIZE];
   char *header_buffer = NULL;
@@ -197,7 +197,6 @@ void *serve_request(void *thread_info) {
 
   /* Read message body if the data is a response (or POST request) */
   if(http_request.data_type.is_response == 0) {
-
     read_body(client, body_buffer, body_overflow, http_request.data_type.content_length);
     printf("Entire Body:%s\n", body_buffer);
   }
@@ -223,9 +222,9 @@ void *serve_request(void *thread_info) {
 
   /* Free all malloc()'d memory */
   free(header_buffer);
-  free(http_request.method_info.method_type);
-  free(http_request.method_info.destination_uri);
-  free(http_request.method_info.http_protocol);
+  free(http_request.request_method_info.method_type);
+  free(http_request.request_method_info.destination_uri);
+  free(http_request.request_method_info.http_protocol);
 
   /* Only free malloc'd indeces */
   for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
@@ -235,6 +234,8 @@ void *serve_request(void *thread_info) {
       free(http_request.headers[i].header_value);
     }
    }
+
+   //TODO: Free http response memory, when Implemented.
 
   pthread_exit(NULL);
 }

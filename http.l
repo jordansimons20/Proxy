@@ -10,14 +10,14 @@
 %}
 
 %option reentrant
-%option extra-type="struct request_t*"
+%option extra-type="struct message_t*"
 %%
 %{
-  struct request_t *http_request = yyextra;
+  struct message_t *http_request = yyextra;
 %}
-^"HTTP/"[^ ]+" "[0-9]{3}" ".+"\n"
+^"HTTP/"[^ ]+" "[0-9]{3}" ".+"\n" { parse_status_line(&yyextra->response_status_line, yytext); }
 ^("GET"|"PUT"|"POST")" "([^ ]+)" HTTP/"([^ ]+)"\n" {
-  parse_method(&yyextra->method_info, yytext); }
+  parse_method(&yyextra->request_method_info, yytext); }
 ^[^:\n]+": ".+"\n"+ { parse_header(yyextra->headers, yytext); }
 .+ {
   puts(yytext);
@@ -25,7 +25,7 @@
 %%
 
 /* Parse HTTP message */
-  int parse_message(int client, char *message_buffer, struct request_t *http_request) {
+  int parse_message(int client, char *message_buffer, struct message_t *http_request) {
 
   char *cl_conversion;
   char log_message[LOG_SIZE];
@@ -77,11 +77,18 @@
      }
    }
 
-  // /* Testing: Print method and all parsed headers */
-  // printf("method_line:%s\n", http_request->method_info.method_type );
-  // printf("destination_uri:%s\n", http_request->method_info.destination_uri );
-  // printf("http_protocol:%s\n", http_request->method_info.http_protocol );
-  //
+  /* Testing: Print method/status_line, and all parsed headers */
+
+  //NOTE: Response fields only.
+  // printf("Protocol:%s\n", http_request->response_status_line.http_protocol );
+  // printf("Status-Code:%s\n", http_request->response_status_line.status_code );
+  // printf("Reason-Phrase:%s\n", http_request->response_status_line.reason_phrase );
+
+  //NOTE: Request fields only.
+  // printf("method_line:%s\n", http_request->request_method_info.method_type );
+  // printf("destination_uri:%s\n", http_request->request_method_info.destination_uri );
+  // printf("http_protocol:%s\n", http_request->request_method_info.http_protocol );
+
   // for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
   //   if(http_request->headers[i].header_name != NULL && http_request->headers[i].header_value != NULL) {
   //     printf("Name:%s\n", http_request->headers[i].header_name);
