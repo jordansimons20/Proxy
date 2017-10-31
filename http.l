@@ -45,10 +45,17 @@
   yylex_destroy(scanner);
 
   /* Iterate through headers, check for Content-Length */
-  //TODO: If we find Transfer-Encoding: Chunked, error and exit.
   for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
 
     if(http_request->headers[i].header_name != NULL && http_request->headers[i].header_value != NULL) {
+
+      /* We do not support Transfer-Encoding */
+      if (strcmp(http_request->headers[i].header_name, "Transfer-Encoding") == 0) {
+        strncpy(log_message, "Failure: Transfer-Encoding Header.", LOG_SIZE);
+        // respond("501 (Not Implemented)");
+        log_event(log_message);
+        pthread_exit(NULL);
+      }
 
       /* Content-Length's presence indicates an HTTP response or POST request. */
       if (strcmp(http_request->headers[i].header_name, "Content-Length") == 0) {
