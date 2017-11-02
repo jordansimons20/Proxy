@@ -3,7 +3,68 @@
 
 //Functions
 /* -------------------------------------------------------------------------------------------------------*/
+/* Parse HTTP response status line */
+void parse_status_line(struct status_line *status_line, char *http_line) {
+  char log_message[LOG_SIZE];
+  char *saveptr = http_line;
+  char *protocol;
+  char *code;
+  char *reason;
 
+  /* Parse the HTTP-Version. */
+  protocol = strtok_r(saveptr, " ", &saveptr);
+  if(protocol == NULL) {
+    strncpy(log_message, "Failure: Parsing HTTP Status-Line", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+
+  /* Parse the Status-Code. */
+  code = strtok_r(saveptr, " ", &saveptr);
+  if(code == NULL) {
+    strncpy(log_message, "Failure: Parsing HTTP Status-Line", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+
+  /* Parse the Reason-Phrase. */
+  reason = strtok_r(saveptr, "\r\n", &saveptr);
+  if(reason == NULL) {
+    strncpy(log_message, "Failure: Parsing HTTP Status-Line", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+
+  /* Save the HTTP-Version into the structure. */
+  status_line->http_protocol = (char *) malloc(strlen(protocol));
+  if (status_line->http_protocol == NULL) {
+    strncpy(log_message, "Failure: malloc() http_protocol", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+  strcpy(status_line->http_protocol, protocol);
+
+  /* Save the Status-Code into the structure. */
+  status_line->status_code = (char *) malloc(strlen(code));
+  if (status_line->status_code == NULL) {
+    strncpy(log_message, "Failure: malloc() status_code", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+  strcpy(status_line->status_code, code);
+
+  /* Save the Reason-Phrase into the structure. */
+  status_line->reason_phrase = (char *) malloc(strlen(reason));
+  if (status_line->reason_phrase == NULL) {
+    strncpy(log_message, "Failure: malloc() reason_phrase", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+  strcpy(status_line->reason_phrase, reason);
+  return;
+}
+/* -------------------------------------------------------------------------------------------------------*/
+/* Parse HTTP request method line */
 void parse_method(struct method_line *method_line, char *http_line){
   char log_message[LOG_SIZE];
   char *saveptr = http_line;
@@ -15,7 +76,6 @@ void parse_method(struct method_line *method_line, char *http_line){
   name = strtok_r(saveptr, " ", &saveptr);
   if(name == NULL) {
     strncpy(log_message, "Failure: Parsing HTTP Method", LOG_SIZE);
-    perror("parse method name: ");
     log_event(log_message);
     // respond('400 BAD REQUEST');
     pthread_exit(NULL);
@@ -25,7 +85,6 @@ void parse_method(struct method_line *method_line, char *http_line){
   destination = strtok_r(saveptr, " ", &saveptr);
   if(name == NULL) {
     strncpy(log_message, "Failure: Parsing HTTP Method", LOG_SIZE);
-    perror("parse method name: ");
     log_event(log_message);
     // respond('400 BAD REQUEST');
     pthread_exit(NULL);
@@ -35,7 +94,6 @@ void parse_method(struct method_line *method_line, char *http_line){
   protocol = strtok_r(saveptr, " ", &saveptr);
   if(name == NULL) {
     strncpy(log_message, "Failure: Parsing HTTP Method", LOG_SIZE);
-    perror("parse method name: ");
     log_event(log_message);
     // respond('400 BAD REQUEST');
     pthread_exit(NULL);
