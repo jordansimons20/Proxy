@@ -14,14 +14,14 @@ struct header_array {
   char *header_value;
 };
 
-/* For each HTTP request method line */
+/* For each HTTP request method line. Each value is NULL if the HTTP message is a response. */
 struct method_line{
   char *method_type;
   char *destination_uri;
   char *http_protocol;
 };
 
-/* For each HTTP response status line */
+/* For each HTTP response status line. Each value is NULL if the HTTP message is a request. */
 struct status_line{
   char *http_protocol;
   char *status_code;

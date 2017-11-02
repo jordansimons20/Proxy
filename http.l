@@ -57,8 +57,18 @@
         pthread_exit(NULL);
       }
 
-      /* Content-Length's presence indicates an HTTP response or POST request. */
+      /* Content-Length's presence indicates an HTTP response or certain requests. */
       if (strcmp(http_request->headers[i].header_name, "Content-Length") == 0) {
+
+        /* If the message is indeed a request, only POST requests will have the method line parsed. */
+        /* If both these fields are NULL, it means a non-supported request method was sent. */
+        if(http_request->request_method_info.method_type == NULL && http_request->response_status_line.http_protocol == NULL) {
+            strncpy(log_message, "Failure: Unsupported Method.", LOG_SIZE);
+            // respond("501 (Not Implemented)");
+            log_event(log_message);
+            pthread_exit(NULL);
+        }
+
         http_request->data_type.is_response = 0;
 
         /* Reset errno to 0 before strtol call */
@@ -74,6 +84,16 @@
           pthread_exit(NULL);
         }
       }
+     }
+   }
+
+   /* If the message is a request (not containing Content-Length header), only supported methods are parsed. */
+   if(http_request->data_type.is_response == 1) {
+     if(http_request->request_method_info.method_type == NULL){
+       strncpy(log_message, "Failure: Unsupported Method.", LOG_SIZE);
+       // respond("501 (Not Implemented)");
+       log_event(log_message);
+       pthread_exit(NULL);
      }
    }
 

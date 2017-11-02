@@ -189,7 +189,6 @@ void *serve_request(void *thread_info) {
   }
 
   read_data(client, &header_buffer, body_overflow);
-  printf("Body Overflow:%s\n", body_overflow);
   parse_message(client, header_buffer, &http_request);
 
   /* Store the content_length-sized message body, plus a terminating null. */
@@ -198,7 +197,6 @@ void *serve_request(void *thread_info) {
   /* Read message body if the data is a response (or POST request) */
   if(http_request.data_type.is_response == 0) {
     read_body(client, body_buffer, body_overflow, http_request.data_type.content_length);
-    printf("Entire Body:%s\n", body_buffer);
   }
 
   char http_message[strlen(header_buffer) + strlen(body_buffer)];
