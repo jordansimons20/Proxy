@@ -1,7 +1,6 @@
 %{
 #include <stdio.h>
 #include "proxy.h"
-#include <errno.h>
   /*
     flex -i -I http.l
     cc -c -o lex.yy.o lex.yy.c
@@ -27,7 +26,6 @@
 /* Parse HTTP message */
   int parse_message(int client, char *message_buffer, struct message_t *http_request) {
 
-  char *cl_conversion;
   char log_message[LOG_SIZE];
 
   /* Configure lex setup */
@@ -44,58 +42,18 @@
   yy_delete_buffer(buf, scanner);
   yylex_destroy(scanner);
 
-  /* Iterate through headers, check for Content-Length */
-  for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
+  /* Iterate through headers, looking for "Content-Length" */
+  check_content_length(http_request);
 
-    if(http_request->headers[i].header_name != NULL && http_request->headers[i].header_value != NULL) {
-
-      /* We do not support Transfer-Encoding */
-      if (strcmp(http_request->headers[i].header_name, "Transfer-Encoding") == 0) {
-        strncpy(log_message, "Failure: Transfer-Encoding Header.", LOG_SIZE);
-        // respond("501 (Not Implemented)");
-        log_event(log_message);
-        pthread_exit(NULL);
-      }
-
-      /* Content-Length's presence indicates an HTTP response or certain requests. */
-      if (strcmp(http_request->headers[i].header_name, "Content-Length") == 0) {
-
-        /* If the message is indeed a request, only POST requests will have the method line parsed. */
-        /* If both these fields are NULL, it means a non-supported request method was sent. */
-        if(http_request->request_method_info.method_type == NULL && http_request->response_status_line.http_protocol == NULL) {
-            strncpy(log_message, "Failure: Unsupported Method.", LOG_SIZE);
-            // respond("501 (Not Implemented)");
-            log_event(log_message);
-            pthread_exit(NULL);
-        }
-
-        http_request->data_type.is_response = 0;
-
-        /* Reset errno to 0 before strtol call */
-        errno = 0;
-
-        /* Save content_length. */
-        http_request->data_type.content_length = strtol(http_request->headers[i].header_value, &cl_conversion, 10);
-
-        /* If errno is set, the 0 returned is invalid. */
-        if (http_request->data_type.content_length == 0 && errno != 0){
-          strncpy(log_message, "Failure: Could not convert Content-Length", LOG_SIZE);
-          log_event(log_message);
-          pthread_exit(NULL);
-        }
-      }
-     }
-   }
-
-   /* If the message is a request (not containing Content-Length header), only supported methods are parsed. */
-   if(http_request->data_type.is_response == 1) {
-     if(http_request->request_method_info.method_type == NULL){
-       strncpy(log_message, "Failure: Unsupported Method.", LOG_SIZE);
-       // respond("501 (Not Implemented)");
-       log_event(log_message);
-       pthread_exit(NULL);
-     }
-   }
+  /* Ensure HTTP Request uses supported methods. */
+  if(http_request->data_type.is_response == 1) {
+    if(http_request->request_method_info.method_type == NULL){
+      strncpy(log_message, "Failure: Unsupported Method.", LOG_SIZE);
+      // respond("501 (Not Implemented)");
+      log_event(log_message);
+      pthread_exit(NULL);
+    }
+  }
 
   /* Testing: Print method/status_line, and all parsed headers */
 

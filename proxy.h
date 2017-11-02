@@ -52,6 +52,7 @@ int stop_server(int server);
 void parse_status_line(struct status_line *status_line, char *http_line);
 void parse_method(struct method_line *method_line, char *http_line);
 void parse_header(struct header_array *headers, char *header_line);
+void check_content_length(struct message_t *http_message);
 
 /* Preprocessing */
 #include <stdio.h>

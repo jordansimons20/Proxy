@@ -1,6 +1,6 @@
 /* Methods called in http.l to further parse HTTP */
 #include "proxy.h"
-
+#include <errno.h>
 //Functions
 /* -------------------------------------------------------------------------------------------------------*/
 /* Parse HTTP response status line */
@@ -178,4 +178,54 @@ void parse_header(struct header_array *headers, char *header_line) {
     }
   }
   return;
+}
+/* -------------------------------------------------------------------------------------------------------*/
+/* Checks for the presence of Content-Length HTTP header in a parsed message */
+void check_content_length(struct message_t *http_message){
+  char log_message[LOG_SIZE];
+  char *cl_conversion;
+
+  /* Iterate through headers, check for Content-Length */
+  for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
+
+    if(http_message->headers[i].header_name != NULL && http_message->headers[i].header_value != NULL) {
+
+      /* We do not support Transfer-Encoding */
+      if (strcmp(http_message->headers[i].header_name, "Transfer-Encoding") == 0) {
+        strncpy(log_message, "Failure: Transfer-Encoding Header.", LOG_SIZE);
+        // respond("501 (Not Implemented)");
+        log_event(log_message);
+        pthread_exit(NULL);
+      }
+
+      /* Content-Length's presence indicates an HTTP response or certain requests. */
+      if (strcmp(http_message->headers[i].header_name, "Content-Length") == 0) {
+
+        /* If the message is indeed a request, only POST requests will have the method line parsed. */
+        /* If both these fields are NULL, it means a non-supported request method was sent. */
+        if(http_message->request_method_info.method_type == NULL && http_message->response_status_line.http_protocol == NULL) {
+            strncpy(log_message, "Failure: Unsupported Method.", LOG_SIZE);
+            // respond("501 (Not Implemented)");
+            log_event(log_message);
+            pthread_exit(NULL);
+        }
+
+        http_message->data_type.is_response = 0;
+
+        /* Reset errno to 0 before strtol call */
+        errno = 0;
+
+        /* Save content_length. */
+        http_message->data_type.content_length = strtol(http_message->headers[i].header_value, &cl_conversion, 10);
+
+        /* If errno is set, the 0 returned is invalid. */
+        if (http_message->data_type.content_length == 0 && errno != 0){
+          strncpy(log_message, "Failure: Could not convert Content-Length", LOG_SIZE);
+          log_event(log_message);
+          pthread_exit(NULL);
+        }
+      }
+     }
+   }
+   return;
 }
