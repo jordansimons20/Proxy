@@ -221,8 +221,10 @@ void *serve_request(void *thread_info) {
   /* Free all malloc()'d memory */
   free(header_buffer);
   free(http_request.request_method_info.method_type);
-  free(http_request.request_method_info.destination_uri);
+  free(http_request.request_method_info.destination_uri.original_destination_uri);
   free(http_request.request_method_info.http_protocol);
+  free(http_request.request_method_info.destination_uri.absolute_path);
+  free(http_request.request_method_info.destination_uri.host);
 
   /* Only free malloc'd indeces */
   for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {

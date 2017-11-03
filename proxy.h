@@ -14,11 +14,20 @@ struct header_array {
   char *header_value;
 };
 
+/* Contains pieces of the destination_uri in HTTP requests */
+struct destination_uri {
+  char *original_destination_uri;
+  char *relative_destination_uri;
+  char *host;
+  int port;
+  char *absolute_path;
+};
 /* For each HTTP request method line. Each value is NULL if the HTTP message is a response. */
 struct method_line{
   char *method_type;
-  char *destination_uri;
+  struct destination_uri destination_uri;
   char *http_protocol;
+  int original_length;
 };
 
 /* For each HTTP response status line. Each value is NULL if the HTTP message is a request. */

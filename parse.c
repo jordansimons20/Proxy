@@ -1,7 +1,10 @@
 /* Methods called in http.l to further parse HTTP */
 #include "proxy.h"
 #include <errno.h>
+#include <netdb.h>
+#include <netinet/in.h>
 //Functions
+static void parse_destination_uri(char *destination_uri, struct method_line *method_line);
 /* -------------------------------------------------------------------------------------------------------*/
 /* Parse HTTP response status line */
 void parse_status_line(struct status_line *status_line, char *http_line) {
@@ -64,6 +67,111 @@ void parse_status_line(struct status_line *status_line, char *http_line) {
   return;
 }
 /* -------------------------------------------------------------------------------------------------------*/
+/* Retrieve destination host name, specified port (if any), and absolute path */
+static void parse_destination_uri(char *destination_uri, struct method_line *method_line){
+  /* Make copy of destination_uri for destructive parsing */
+  struct servent *servent;
+  char destination_uri_copy[strlen(destination_uri)];
+  strcpy(destination_uri_copy, destination_uri);
+  char *saveptr = destination_uri_copy;
+  char log_message[LOG_SIZE];
+  char *parsed_host;
+  char *final_host;
+  char *parsed_path;
+  int port;
+  char *port_conversion;
+  char final_path[strlen(destination_uri)]; //Cannot exceed this length
+
+  /* Move passed the initial http:// */
+  if( strtok_r(saveptr, "/", &saveptr) == NULL) {
+    strncpy(log_message, "Failure: Parsing destination_uri", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+  saveptr = saveptr + 1;
+
+  /* Port and Absolute Path may or may not be specified: www.example.com:8080/path/ (specified) www.example.com:8080/ (unspecified)  */
+  parsed_host = strtok_r(saveptr, "/", &saveptr);
+  if(parsed_host == NULL) {
+    strncpy(log_message, "Failure: Parsing host destination_uri", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+
+  /* The absolute path may or may not exist. */
+  parsed_path = strtok_r(saveptr, " ", &saveptr);
+
+  /* If no absolute path is specified, we use "/" */
+  if(parsed_path == NULL) {
+    strcpy(final_path, "/");
+  }
+
+  /* Otherwise, use the specified path */
+  else {
+    /* The absolute path has its first '/' cut off by the parsing */
+    strcpy(final_path, "/");
+    strcat(final_path, parsed_path);
+  }
+
+  /* We don't know if a port has been specified, so we check host */
+  final_host = strtok_r(parsed_host, ":", &parsed_host);
+  if(final_host == NULL) {
+    strncpy(log_message, "Failure: Parsing host destination_uri", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+  /* NULL parsed_host indicates no port specified, so we use the default */
+  if(parsed_host == NULL) {
+    servent = getservbyname("http", NULL);
+    endservent();
+
+    if(servent == NULL) {
+      strncpy(log_message, "Failure: Could not find standard port", LOG_SIZE);
+      log_event(log_message);
+      pthread_exit(NULL);
+    }
+
+    /* Convert port to host byte order */
+    port = ntohs(servent->s_port);
+
+  }
+
+  else {
+    /* Convert the specified port to an integer */
+    port = strtol(parsed_host, &port_conversion, 10);
+
+    /* Check for error */
+    if (port == 0){
+      strncpy(log_message, "Failure: Could not convert Port", LOG_SIZE);
+      log_event(log_message);
+      pthread_exit(NULL);
+    }
+  }
+
+  /* Save the Host into the structure. */
+  method_line->destination_uri.host = (char *) malloc(strlen(final_host));
+  if (method_line->destination_uri.host == NULL) {
+    strncpy(log_message, "Failure: malloc() host", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+  strcpy(method_line->destination_uri.host, final_host);
+
+  /* Save the absolute path into the structure. */
+  method_line->destination_uri.absolute_path = (char *) malloc(strlen(final_path));
+  if (method_line->destination_uri.absolute_path == NULL) {
+    strncpy(log_message, "Failure: malloc() host", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+  strcpy(method_line->destination_uri.absolute_path, final_path);
+
+  /* Save the port into the structure. */
+  method_line->destination_uri.port = port;
+
+  return;
+}
+/* -------------------------------------------------------------------------------------------------------*/
 /* Parse HTTP request method line */
 void parse_method(struct method_line *method_line, char *http_line){
   char log_message[LOG_SIZE];
@@ -71,6 +179,9 @@ void parse_method(struct method_line *method_line, char *http_line){
   char *name;
   char *destination;
   char *protocol;
+
+  /* Save the original length */
+  method_line->original_length = strlen(http_line);
 
   /* Parse the method name. */
   name = strtok_r(saveptr, " ", &saveptr);
@@ -90,6 +201,9 @@ void parse_method(struct method_line *method_line, char *http_line){
     pthread_exit(NULL);
   }
 
+  /* Further parse the destination URI substring */
+  parse_destination_uri(destination, method_line);
+
   /* Parse the Protocol. */
   protocol = strtok_r(saveptr, " ", &saveptr);
   if(name == NULL) {
@@ -108,20 +222,22 @@ void parse_method(struct method_line *method_line, char *http_line){
   }
   strcpy(method_line->method_type, name);
 
-  /* Save the destination uri into the structure. */
-  method_line->destination_uri = (char *) malloc(strlen(destination));
-  if (method_line->destination_uri== NULL) {
-    strncpy(log_message, "Failure: malloc() destination_uri", LOG_SIZE);
+  /* Save the original destination uri into the structure. */
+  method_line->destination_uri.original_destination_uri = (char *) malloc(strlen(destination));
+  if (method_line->destination_uri.original_destination_uri== NULL) {
+    strncpy(log_message, "Failure: malloc() original_destination_uri", LOG_SIZE);
     log_event(log_message);
     pthread_exit(NULL);
   }
-  //TODO: Further parse destination_uri, possibly introduce another struct for it.
-  strcpy(method_line->destination_uri, destination);
+  strcpy(method_line->destination_uri.original_destination_uri, destination);
+
+  /* TODO:Save the modified relative request line into the structure. */
+  /* NOTE: Remember to free it in proxy.c after. */
 
   /* Save the http protocol into the structure. */
   method_line->http_protocol = (char *) malloc(strlen(protocol));
   if (method_line->http_protocol == NULL) {
-    strncpy(log_message, "Failure: malloc() destination_uri", LOG_SIZE);
+    strncpy(log_message, "Failure: malloc() http_protocol", LOG_SIZE);
     log_event(log_message);
     pthread_exit(NULL);
   }

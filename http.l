@@ -64,8 +64,12 @@
 
   //NOTE: Request fields only.
   // printf("method_line:%s\n", http_request->request_method_info.method_type );
-  // printf("destination_uri:%s\n", http_request->request_method_info.destination_uri );
+  // printf("destination_uri:%s\n", http_request->request_method_info.destination_uri.original_destination_uri );
   // printf("http_protocol:%s\n", http_request->request_method_info.http_protocol );
+  // printf("Original Method_Line Length: %d\n", http_request->request_method_info.original_length);
+  printf("Host: %s\n", http_request->request_method_info.destination_uri.host);
+  printf("Path: %s\n", http_request->request_method_info.destination_uri.absolute_path);
+  printf("Port: %d\n", http_request->request_method_info.destination_uri.port);
 
   // for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
   //   if(http_request->headers[i].header_name != NULL && http_request->headers[i].header_value != NULL) {
