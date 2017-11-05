@@ -199,14 +199,22 @@ void *serve_request(void *thread_info) {
     read_body(client, body_buffer, body_overflow, http_request.data_type.content_length);
   }
 
-  char http_message[strlen(header_buffer) + strlen(body_buffer)];
+  /* Replace the method-line with the relative version. */
+  char relative_header_buffer[strlen(header_buffer)];
+  strcpy(relative_header_buffer, http_request.request_method_info.relative_method_line);
 
-  strcpy(http_message, header_buffer);
+  /* Add the rest of the headers after the original method_line */
+  strcat(relative_header_buffer, header_buffer + http_request.request_method_info.original_length);
+
+  char http_message[strlen(relative_header_buffer) + strlen(body_buffer)];
+  strcpy(http_message, relative_header_buffer);
+
+  /* Add the body, if there is one. */
   if (http_request.data_type.is_response == 0) {
     strcat(http_message, body_buffer);
   }
 
-  printf("Full HTTP Message:\n%s\n", http_message);
+  printf("HTTP Message:\n%s\n", http_message);
 
   char header_buffer_final[strlen(http_message) + 100];
 
@@ -222,6 +230,7 @@ void *serve_request(void *thread_info) {
   free(header_buffer);
   free(http_request.request_method_info.method_type);
   free(http_request.request_method_info.destination_uri.original_destination_uri);
+  free(http_request.request_method_info.relative_method_line);
   free(http_request.request_method_info.http_protocol);
   free(http_request.request_method_info.destination_uri.absolute_path);
   free(http_request.request_method_info.destination_uri.host);

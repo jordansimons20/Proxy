@@ -231,9 +231,6 @@ void parse_method(struct method_line *method_line, char *http_line){
   }
   strcpy(method_line->destination_uri.original_destination_uri, destination);
 
-  /* TODO:Save the modified relative request line into the structure. */
-  /* NOTE: Remember to free it in proxy.c after. */
-
   /* Save the http protocol into the structure. */
   method_line->http_protocol = (char *) malloc(strlen(protocol));
   if (method_line->http_protocol == NULL) {
@@ -242,6 +239,21 @@ void parse_method(struct method_line *method_line, char *http_line){
     pthread_exit(NULL);
   }
   strcpy(method_line->http_protocol, protocol);
+
+  /* Save the crafted relative request line into the structure. */
+  method_line->relative_method_line = (char *) malloc(strlen(destination));
+  if (method_line->relative_method_line == NULL) {
+    strncpy(log_message, "Failure: malloc() relative_method_line", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+  /* Format: Method SP Request-URI SP HTTP-Version CRLF */
+  strcpy(method_line->relative_method_line, method_line->method_type );
+  strcat(method_line->relative_method_line, " ");
+  strcat(method_line->relative_method_line, method_line->destination_uri.absolute_path);
+  strcat(method_line->relative_method_line, " ");
+  strcat(method_line->relative_method_line, method_line->http_protocol);
+  // NOTE: method_line->http_protocol contains the traling CRLF
 
   return;
 }
