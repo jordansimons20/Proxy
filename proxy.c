@@ -4,11 +4,13 @@
 #include <fcntl.h>
 #include <sys/socket.h>
 #include <errno.h>
+#include <netdb.h>
+
 
 //Function Prototypes
 static void read_data(int client, char **header_buffer, char *body_beginning);
 static void read_body(int client, char *body_buffer, char *body_overflow, long content_length);
-static int connect_to_host(void);
+static int connect_to_host(struct message_t *http_request);
 static int send_request_to_host(void);
 static int get_response(void);
 
@@ -90,22 +92,51 @@ static void read_body(int client, char *body_buffer, char *body_overflow, long c
   return;
 }
 /* -------------------------------------------------------------------------------------------------------*/
-static int connect_to_host(void){
+/* Connects to the host specified in the http_request, returns the host socket. */
+static int connect_to_host(struct message_t *http_request){
+  char log_message[LOG_SIZE];
+  struct addrinfo hints, *servinfo, *p;
+  int rv, host_socket;
+  char *host = http_request->request_method_info.destination_uri.host;
+  char *port = http_request->request_method_info.destination_uri.port;
 
-  printf("Connect to Host: ");
+  /* Setup the hints parameter for getaddrinfo() */
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_UNSPEC; // Allow IPv4 and IPv6
+  hints.ai_socktype = SOCK_STREAM;
 
-  int success = rand() % 2;
-  if (success == 0){
-    printf("Success \n");
-    send_request_to_host();
-   }
+  /* Get information to connect to the host. */
+  if ((rv = getaddrinfo(host, port, &hints, &servinfo)) != 0) {
+    strncpy(log_message, "Failure: getaddrinfo", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
 
-  else{
-    printf("Failure \n");
-    // respond();
-   }
+  /* Loop through all the results and connect to the first we can */
+  for(p = servinfo; p != NULL; p = p->ai_next) {
+      if ((host_socket = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1) {
+        continue;
+      }
 
-  return EXIT_SUCCESS;
+      if (connect(host_socket, p->ai_addr, p->ai_addrlen) == -1) {
+        close(host_socket);
+        continue;
+      }
+
+      break; /* If we get here, we must have connected successfully */
+  }
+
+  if (p == NULL) {
+      /* Looped off the end of the list with no connection */
+      strncpy(log_message, "Failure: could not connect to host", LOG_SIZE);
+      log_event(log_message);
+      pthread_exit(NULL);
+  }
+
+  freeaddrinfo(servinfo); /* All done with this structure */
+  puts("Connected!");
+
+  return host_socket;
 }
 /* -------------------------------------------------------------------------------------------------------*/
 /* Authenticate access to admin functions, and fulfill them. */
@@ -175,9 +206,10 @@ void respond(int client, char *content){
 void *serve_request(void *thread_info) {
 
   int client = (int) thread_info;
+  int host;
   char log_message[LOG_SIZE];
   struct message_t http_request;
-  http_request.data_type.is_response = 1; //Default to request.
+  http_request.data_type.is_response = 1;
   char body_overflow[READ_SIZE];
   char *header_buffer = NULL;
 
@@ -214,7 +246,7 @@ void *serve_request(void *thread_info) {
     strcat(http_message, body_buffer);
   }
 
-  printf("HTTP Message:\n%s\n", http_message);
+  printf("HTTP Message:\n%s", http_message);
 
   char header_buffer_final[strlen(http_message) + 100];
 
@@ -224,7 +256,8 @@ void *serve_request(void *thread_info) {
 
   respond(client, header_buffer_final);
 
-  authenticate();
+  /* Connect to the host */
+  host = connect_to_host(&http_request);
 
   /* Free all malloc()'d memory */
   free(header_buffer);
@@ -234,6 +267,7 @@ void *serve_request(void *thread_info) {
   free(http_request.request_method_info.http_protocol);
   free(http_request.request_method_info.destination_uri.absolute_path);
   free(http_request.request_method_info.destination_uri.host);
+  free(http_request.request_method_info.destination_uri.port);
 
   /* Only free malloc'd indeces */
   for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
@@ -244,7 +278,9 @@ void *serve_request(void *thread_info) {
     }
    }
 
-   //TODO: Free http response memory, when Implemented.
+   authenticate();
+   close(client);
+   close(host); //TODO: Move this once we read from host.
 
   pthread_exit(NULL);
 }

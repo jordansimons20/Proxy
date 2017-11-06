@@ -18,7 +18,7 @@ struct header_array {
 struct destination_uri {
   char *original_destination_uri;
   char *host;
-  int port;
+  char *port;
   char *absolute_path;
 };
 /* For each HTTP request method line. Each value is NULL if the HTTP message is a response. */

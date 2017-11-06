@@ -70,16 +70,16 @@ void parse_status_line(struct status_line *status_line, char *http_line) {
 /* Retrieve destination host name, specified port (if any), and absolute path */
 static void parse_destination_uri(char *destination_uri, struct method_line *method_line){
   /* Make copy of destination_uri for destructive parsing */
-  struct servent *servent;
   char destination_uri_copy[strlen(destination_uri)];
   strcpy(destination_uri_copy, destination_uri);
+
+  struct servent *servent;
   char *saveptr = destination_uri_copy;
   char log_message[LOG_SIZE];
   char *parsed_host;
   char *final_host;
   char *parsed_path;
-  int port;
-  char *port_conversion;
+  char *port;
   char final_path[strlen(destination_uri)]; //Cannot exceed this length
 
   /* Move passed the initial http:// */
@@ -132,20 +132,17 @@ static void parse_destination_uri(char *destination_uri, struct method_line *met
     }
 
     /* Convert port to host byte order */
-    port = ntohs(servent->s_port);
+    int int_port = ntohs(servent->s_port);
 
+    /* Convert port into a string */
+    char temp_port[sizeof(int)];
+    sprintf(temp_port, "%d", int_port);
+    port = temp_port;
   }
 
   else {
-    /* Convert the specified port to an integer */
-    port = strtol(parsed_host, &port_conversion, 10);
-
-    /* Check for error */
-    if (port == 0){
-      strncpy(log_message, "Failure: Could not convert Port", LOG_SIZE);
-      log_event(log_message);
-      pthread_exit(NULL);
-    }
+    /* Use specified port */
+    port = parsed_host;
   }
 
   /* Save the Host into the structure. */
@@ -167,7 +164,13 @@ static void parse_destination_uri(char *destination_uri, struct method_line *met
   strcpy(method_line->destination_uri.absolute_path, final_path);
 
   /* Save the port into the structure. */
-  method_line->destination_uri.port = port;
+  method_line->destination_uri.port = (char *) malloc(strlen(port));
+  if (method_line->destination_uri.port == NULL) {
+    strncpy(log_message, "Failure: malloc() port", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+  strcpy(method_line->destination_uri.port, port);
 
   return;
 }

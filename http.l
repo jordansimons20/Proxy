@@ -18,9 +18,7 @@
 ^("GET"|"PUT"|"POST")" "([^ ]+)" HTTP/"([^ ]+)"\n" {
   parse_method(&yyextra->request_method_info, yytext); }
 ^[^:\n]+": ".+"\n"+ { parse_header(yyextra->headers, yytext); }
-.+ {
-  puts(yytext);
-  /* TODO: parse_body(); */ }
+.+ { puts(yytext); }
 %%
 
 /* Parse HTTP message */
@@ -69,7 +67,7 @@
   // printf("Original Method_Line Length: %d\n", http_request->request_method_info.original_length);
   // printf("Host: %s\n", http_request->request_method_info.destination_uri.host);
   // printf("Path: %s\n", http_request->request_method_info.destination_uri.absolute_path);
-  // printf("Port: %d\n", http_request->request_method_info.destination_uri.port);
+  // printf("Port: %s\n", http_request->request_method_info.destination_uri.port);
     // printf("Relative method_line: %s\n",  http_request->request_method_info.relative_method_line);
 
   // for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
