@@ -11,7 +11,7 @@
 static void read_data(int client, char **header_buffer, char *body_beginning);
 static void read_body(int client, char *body_buffer, char *body_overflow, long content_length);
 static int connect_to_host(struct message_t *http_request);
-static int send_request_to_host(void);
+static void send_request_to_host(int host_socket, char *http_request);
 static int get_response(void);
 
 //Functions
@@ -150,23 +150,18 @@ void authenticate(){
   return;
 }
 /* -------------------------------------------------------------------------------------------------------*/
+/* Send the modified HTTP request to the host */
+static void send_request_to_host(int host_socket, char *http_request){
+  char log_message[LOG_SIZE];
 
-static int send_request_to_host(void){
+  if( write(host_socket, http_request, strlen(http_request)) == -1 ) {
+    strncpy(log_message, "Failure: write to host", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+  puts("Sent request to host.");
 
-  printf("Send Request to Host: ");
-
-  int success = rand() % 2;
-  if (success == 0){
-    printf("Success \n");
-    get_response();
-   }
-
-  else{
-    printf("Failure \n");
-    // respond();
-   }
-
-  return EXIT_SUCCESS;
+  return;
 }
 /* -------------------------------------------------------------------------------------------------------*/
 
@@ -256,8 +251,9 @@ void *serve_request(void *thread_info) {
 
   respond(client, header_buffer_final);
 
-  /* Connect to the host */
   host = connect_to_host(&http_request);
+
+  send_request_to_host(host, http_message);
 
   /* Free all malloc()'d memory */
   free(header_buffer);
