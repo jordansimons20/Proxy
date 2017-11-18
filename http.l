@@ -17,12 +17,15 @@
 ^"HTTP/"[^ ]+" "[0-9]{3}" ".+"\n" { parse_status_line(&yyextra->response_status_line, yytext); }
 ^("GET"|"PUT"|"POST")" "([^ ]+)" HTTP/"([^ ]+)"\n" {
   parse_method(&yyextra->request_method_info, yytext); }
-^[^:\n]+": ".+"\n"+ { parse_header(yyextra->headers, yytext); }
-.+ { puts(yytext); }
+^[^:\n\r]+": ".+[\n\r]+ { parse_header(yyextra->headers, yytext); }
+.+ { puts("WARNING: THIS SHOULD NOT BE HERE!");
+  for(int i = 0; i < strlen(yytext); i++) {
+  printf("[%u]\n", (unsigned char) yytext[i]);
+} }
 %%
 
 /* Parse HTTP message */
-  int parse_message(int client, char *message_buffer, struct message_t *http_request) {
+  int parse_message(char *message_buffer, struct message_t *http_request) {
 
   char log_message[LOG_SIZE];
 
@@ -56,9 +59,9 @@
   /* Testing: Print method/status_line, and all parsed headers */
 
   //NOTE: Response fields only.
-  // printf("Protocol:%s\n", http_request->response_status_line.http_protocol );
-  // printf("Status-Code:%s\n", http_request->response_status_line.status_code );
-  // printf("Reason-Phrase:%s\n", http_request->response_status_line.reason_phrase );
+  printf("Protocol:%s\n", http_request->response_status_line.http_protocol );
+  printf("Status-Code:%s\n", http_request->response_status_line.status_code );
+  printf("Reason-Phrase:%s\n", http_request->response_status_line.reason_phrase );
 
   //NOTE: Request fields only.
   // printf("method_line:%s\n", http_request->request_method_info.method_type );

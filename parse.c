@@ -323,7 +323,7 @@ void check_content_length(struct message_t *http_message){
 
       /* We do not support Transfer-Encoding */
       if (strcmp(http_message->headers[i].header_name, "Transfer-Encoding") == 0) {
-        strncpy(log_message, "Failure: Transfer-Encoding Header.", LOG_SIZE);
+        strncpy(log_message, "Failure: Transfer-Encoding Header Present.", LOG_SIZE);
         // respond("501 (Not Implemented)");
         log_event(log_message);
         pthread_exit(NULL);

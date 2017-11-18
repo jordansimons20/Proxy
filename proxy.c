@@ -12,7 +12,6 @@ static void read_data(int client, char **header_buffer, char *body_beginning);
 static void read_body(int client, char *body_buffer, char *body_overflow, long content_length);
 static int connect_to_host(struct message_t *http_request);
 static void send_request_to_host(int host_socket, char *http_request);
-static int get_response(void);
 
 //Functions
 /* -------------------------------------------------------------------------------------------------------*/
@@ -47,11 +46,10 @@ static void read_data(int client, char **header_buffer, char *body_beginning){
       strcpy(body_beginning, needle + 3);
 
       /* Add terminating null after the "\n\r\n" occurs */
-      strcpy(*header_buffer + read_length - strlen(body_beginning), "\0");
-
-      //NOTE: The strcpy logic appears to be correct, based on testing. However, check back here if issues arise later.
+      *(needle + 3) = 0;
 
       break;
+      //NOTE: return here instead? break makes another realloc()? Investigate
     }
 
     /* Realloc enough memory for next read() */
@@ -78,11 +76,16 @@ static void read_body(int client, char *body_buffer, char *body_overflow, long c
   /* Subtract data already read in read_data() */
   content_length -= overflow_size;
 
-  if (-1 == (n = read(client, body_buffer + overflow_size, content_length))) {
+  // printf("content length: %d\n", content_length);
+
+  if (-1 == (n = read(client, body_buffer + overflow_size, content_length * 2))) {
     strncpy(log_message, "Failure: Read HTTP Body", LOG_SIZE);
+    //perror("Body");
     log_event(log_message);
     pthread_exit(NULL);
   }
+
+  // printf("Bytes Read: %lu\n", n);
 
   body_buffer[n + overflow_size] = 0;
 
@@ -159,28 +162,11 @@ static void send_request_to_host(int host_socket, char *http_request){
     log_event(log_message);
     pthread_exit(NULL);
   }
+  fsync(host_socket);
+
   puts("Sent request to host.");
 
   return;
-}
-/* -------------------------------------------------------------------------------------------------------*/
-
-static int get_response(void){
-
-  printf("Get Response: ");
-
-  int success = rand() % 2;
-  if (success == 0){
-    printf("Success \n");
-    // respond();
-   }
-
-  else{
-    printf("Failure \n");
-    // respond();
-   }
-
-  return EXIT_SUCCESS;
 }
 /* -------------------------------------------------------------------------------------------------------*/
 /* Responds to client with given content. */
@@ -205,8 +191,12 @@ void *serve_request(void *thread_info) {
   char log_message[LOG_SIZE];
   struct message_t http_request;
   http_request.data_type.is_response = 1;
+  struct message_t http_response;
+  http_response.data_type.is_response = 0;
   char body_overflow[READ_SIZE];
   char *header_buffer = NULL;
+  char *response_header_buffer = NULL;
+  char *response_body_buffer = NULL;
 
   header_buffer = (char *) malloc(READ_SIZE);
   if (header_buffer == NULL) {
@@ -216,7 +206,7 @@ void *serve_request(void *thread_info) {
   }
 
   read_data(client, &header_buffer, body_overflow);
-  parse_message(client, header_buffer, &http_request);
+  parse_message(header_buffer, &http_request);
 
   /* Store the content_length-sized message body, plus a terminating null. */
   char body_buffer[http_request.data_type.content_length + 1];
@@ -241,7 +231,7 @@ void *serve_request(void *thread_info) {
     strcat(http_message, body_buffer);
   }
 
-  printf("HTTP Message:\n%s", http_message);
+  printf("HTTP Request:\n%s", http_message);
 
   char header_buffer_final[strlen(http_message) + 100];
 
@@ -255,8 +245,43 @@ void *serve_request(void *thread_info) {
 
   send_request_to_host(host, http_message);
 
+  /* We read the response the same way as the initial request */
+  response_header_buffer = (char *) malloc(READ_SIZE);
+  if (response_header_buffer == NULL) {
+    strncpy(log_message, "Failure: malloc() response_header_buffer", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+
+  /* Clear body_overflow for re-use */
+  memset(&body_overflow[0], 0, sizeof(body_overflow));
+
+
+  read_data(host, &response_header_buffer, body_overflow);
+  printf("Response Headers:\n%s", response_header_buffer);
+
+  puts("End of Response Headers.");
+
+  parse_message(response_header_buffer, &http_response);
+
+  //TODO: Read body.
+  response_body_buffer = (char *) malloc(http_response.data_type.content_length + 1);
+  if (response_body_buffer == NULL) {
+    strncpy(log_message, "Failure: malloc() response_body_buffer", LOG_SIZE);
+    log_event(log_message);
+    pthread_exit(NULL);
+  }
+
+  read_body(host, response_body_buffer, body_overflow, http_response.data_type.content_length);
+
+  printf("Response body: %s \n", response_body_buffer);
+
+  close(host);
+
   /* Free all malloc()'d memory */
   free(header_buffer);
+  free(response_header_buffer);
+  free(response_body_buffer);
   free(http_request.request_method_info.method_type);
   free(http_request.request_method_info.destination_uri.original_destination_uri);
   free(http_request.request_method_info.relative_method_line);
@@ -274,9 +299,10 @@ void *serve_request(void *thread_info) {
     }
    }
 
+  //TODO: free() memory from http_response structure.
+
    authenticate();
    close(client);
-   close(host); //TODO: Move this once we read from host.
 
   pthread_exit(NULL);
 }
