@@ -147,6 +147,7 @@ static int accept_connection(int server){
       strncpy(log_message, "Failure: Thread Creation", LOG_SIZE);
       log_event(log_message);
     }
+    // serve_request((void* )clientArg);
 
   } while (!done);
 

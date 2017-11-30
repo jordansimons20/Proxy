@@ -24,7 +24,7 @@
 } }
 %%
 
-/* Parse HTTP message */
+  /* Parse HTTP message */
   int parse_message(char *message_buffer, struct message_t *http_request) {
 
   char log_message[LOG_SIZE];
@@ -59,9 +59,9 @@
   /* Testing: Print method/status_line, and all parsed headers */
 
   //NOTE: Response fields only.
-  printf("Protocol:%s\n", http_request->response_status_line.http_protocol );
-  printf("Status-Code:%s\n", http_request->response_status_line.status_code );
-  printf("Reason-Phrase:%s\n", http_request->response_status_line.reason_phrase );
+  // printf("Protocol:%s\n", http_request->response_status_line.http_protocol );
+  // printf("Status-Code:%s\n", http_request->response_status_line.status_code );
+  // printf("Reason-Phrase:%s\n", http_request->response_status_line.reason_phrase );
 
   //NOTE: Request fields only.
   // printf("method_line:%s\n", http_request->request_method_info.method_type );

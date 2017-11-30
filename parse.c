@@ -10,9 +10,9 @@ static void parse_destination_uri(char *destination_uri, struct method_line *met
 void parse_status_line(struct status_line *status_line, char *http_line) {
   char log_message[LOG_SIZE];
   char *saveptr = http_line;
-  char *protocol;
-  char *code;
-  char *reason;
+  char *protocol = NULL;
+  char *code = NULL;
+  char *reason = NULL;
 
   /* Parse the HTTP-Version. */
   protocol = strtok_r(saveptr, " ", &saveptr);
@@ -39,7 +39,7 @@ void parse_status_line(struct status_line *status_line, char *http_line) {
   }
 
   /* Save the HTTP-Version into the structure. */
-  status_line->http_protocol = (char *) malloc(strlen(protocol));
+  status_line->http_protocol = malloc(strlen(protocol) + 1);
   if (status_line->http_protocol == NULL) {
     strncpy(log_message, "Failure: malloc() http_protocol", LOG_SIZE);
     log_event(log_message);
@@ -48,7 +48,7 @@ void parse_status_line(struct status_line *status_line, char *http_line) {
   strcpy(status_line->http_protocol, protocol);
 
   /* Save the Status-Code into the structure. */
-  status_line->status_code = (char *) malloc(strlen(code));
+  status_line->status_code = malloc(strlen(code) + 1);
   if (status_line->status_code == NULL) {
     strncpy(log_message, "Failure: malloc() status_code", LOG_SIZE);
     log_event(log_message);
@@ -57,7 +57,7 @@ void parse_status_line(struct status_line *status_line, char *http_line) {
   strcpy(status_line->status_code, code);
 
   /* Save the Reason-Phrase into the structure. */
-  status_line->reason_phrase = (char *) malloc(strlen(reason));
+  status_line->reason_phrase = malloc(strlen(reason) + 1);
   if (status_line->reason_phrase == NULL) {
     strncpy(log_message, "Failure: malloc() reason_phrase", LOG_SIZE);
     log_event(log_message);
@@ -70,16 +70,16 @@ void parse_status_line(struct status_line *status_line, char *http_line) {
 /* Retrieve destination host name, specified port (if any), and absolute path */
 static void parse_destination_uri(char *destination_uri, struct method_line *method_line){
   /* Make copy of destination_uri for destructive parsing */
-  char destination_uri_copy[strlen(destination_uri)];
+  char destination_uri_copy[strlen(destination_uri) + 1];
   strcpy(destination_uri_copy, destination_uri);
 
   struct servent *servent;
   char *saveptr = destination_uri_copy;
   char log_message[LOG_SIZE];
-  char *parsed_host;
-  char *final_host;
-  char *parsed_path;
-  char *port;
+  char *parsed_host = NULL;
+  char *final_host = NULL;
+  char *parsed_path = NULL;
+  char *port = NULL;
   char final_path[strlen(destination_uri)]; //Cannot exceed this length
 
   /* Move passed the initial http:// */
@@ -146,7 +146,7 @@ static void parse_destination_uri(char *destination_uri, struct method_line *met
   }
 
   /* Save the Host into the structure. */
-  method_line->destination_uri.host = (char *) malloc(strlen(final_host));
+  method_line->destination_uri.host = malloc(strlen(final_host) + 1);
   if (method_line->destination_uri.host == NULL) {
     strncpy(log_message, "Failure: malloc() host", LOG_SIZE);
     log_event(log_message);
@@ -155,7 +155,7 @@ static void parse_destination_uri(char *destination_uri, struct method_line *met
   strcpy(method_line->destination_uri.host, final_host);
 
   /* Save the absolute path into the structure. */
-  method_line->destination_uri.absolute_path = (char *) malloc(strlen(final_path));
+  method_line->destination_uri.absolute_path = malloc(strlen(final_path) + 1);
   if (method_line->destination_uri.absolute_path == NULL) {
     strncpy(log_message, "Failure: malloc() host", LOG_SIZE);
     log_event(log_message);
@@ -164,7 +164,7 @@ static void parse_destination_uri(char *destination_uri, struct method_line *met
   strcpy(method_line->destination_uri.absolute_path, final_path);
 
   /* Save the port into the structure. */
-  method_line->destination_uri.port = (char *) malloc(strlen(port));
+  method_line->destination_uri.port = malloc(strlen(port) + 1);
   if (method_line->destination_uri.port == NULL) {
     strncpy(log_message, "Failure: malloc() port", LOG_SIZE);
     log_event(log_message);
@@ -179,9 +179,9 @@ static void parse_destination_uri(char *destination_uri, struct method_line *met
 void parse_method(struct method_line *method_line, char *http_line){
   char log_message[LOG_SIZE];
   char *saveptr = http_line;
-  char *name;
-  char *destination;
-  char *protocol;
+  char *name = NULL;
+  char *destination = NULL;
+  char *protocol = NULL;
 
   /* Save the original length */
   method_line->original_length = strlen(http_line);
@@ -217,7 +217,7 @@ void parse_method(struct method_line *method_line, char *http_line){
   }
 
   /* Save the method type into the structure. */
-  method_line->method_type = (char *) malloc(strlen(name));
+  method_line->method_type = malloc(strlen(name) + 1);
   if (method_line->method_type == NULL) {
     strncpy(log_message, "Failure: malloc() method_type", LOG_SIZE);
     log_event(log_message);
@@ -226,7 +226,7 @@ void parse_method(struct method_line *method_line, char *http_line){
   strcpy(method_line->method_type, name);
 
   /* Save the original destination uri into the structure. */
-  method_line->destination_uri.original_destination_uri = (char *) malloc(strlen(destination));
+  method_line->destination_uri.original_destination_uri = malloc(strlen(destination) + 1);
   if (method_line->destination_uri.original_destination_uri== NULL) {
     strncpy(log_message, "Failure: malloc() original_destination_uri", LOG_SIZE);
     log_event(log_message);
@@ -235,7 +235,7 @@ void parse_method(struct method_line *method_line, char *http_line){
   strcpy(method_line->destination_uri.original_destination_uri, destination);
 
   /* Save the http protocol into the structure. */
-  method_line->http_protocol = (char *) malloc(strlen(protocol));
+  method_line->http_protocol = malloc(strlen(protocol) + 1);
   if (method_line->http_protocol == NULL) {
     strncpy(log_message, "Failure: malloc() http_protocol", LOG_SIZE);
     log_event(log_message);
@@ -244,7 +244,7 @@ void parse_method(struct method_line *method_line, char *http_line){
   strcpy(method_line->http_protocol, protocol);
 
   /* Save the crafted relative request line into the structure. */
-  method_line->relative_method_line = (char *) malloc(strlen(destination));
+  method_line->relative_method_line = malloc(strlen(destination) + 1);
   if (method_line->relative_method_line == NULL) {
     strncpy(log_message, "Failure: malloc() relative_method_line", LOG_SIZE);
     log_event(log_message);
@@ -256,7 +256,7 @@ void parse_method(struct method_line *method_line, char *http_line){
   strcat(method_line->relative_method_line, method_line->destination_uri.absolute_path);
   strcat(method_line->relative_method_line, " ");
   strcat(method_line->relative_method_line, method_line->http_protocol);
-  // NOTE: method_line->http_protocol contains the traling CRLF
+  // NOTE: method_line->http_protocol contains the trailing CRLF and terminating NULL
 
   return;
 }
@@ -265,7 +265,7 @@ void parse_method(struct method_line *method_line, char *http_line){
 void parse_header(struct header_array *headers, char *header_line) {
   char *saveptr = header_line;
   char log_message[LOG_SIZE];
-  char* name;
+  char* name = NULL;
   int save_len;
 
   /* Parse the header. */
@@ -283,7 +283,7 @@ void parse_header(struct header_array *headers, char *header_line) {
     if(headers[i].header_name == NULL && headers[i].header_value == NULL) {
 
       /* Assign name and value into the structure. */
-      headers[i].header_name = (char *) malloc(strlen(name));
+      headers[i].header_name = malloc(strlen(name) + 1);
       if (headers[i].header_name == NULL) {
         strncpy(log_message, "Failure: malloc() header_name", LOG_SIZE);
         log_event(log_message);
@@ -293,11 +293,11 @@ void parse_header(struct header_array *headers, char *header_line) {
 
       /* Trim leading whitespace on header value. */
       // NOTE: This approach eliminates the odd behavior when trimming the space, but perhaps there is a more elegant way of doing it?
-      save_len = strlen(saveptr);
+      save_len = strlen(saveptr) + 1;
       saveptr++;
 
       // headers[i].header_value = (char *) malloc(strlen(saveptr));
-      headers[i].header_value = (char *) malloc(save_len);
+      headers[i].header_value = malloc(save_len);
       if (headers[i].header_value == NULL) {
         strncpy(log_message, "Failure: malloc() header_value", LOG_SIZE);
         log_event(log_message);
@@ -314,7 +314,7 @@ void parse_header(struct header_array *headers, char *header_line) {
 /* Checks for the presence of Content-Length HTTP header in a parsed message */
 void check_content_length(struct message_t *http_message){
   char log_message[LOG_SIZE];
-  char *cl_conversion;
+  char *cl_conversion = NULL;
 
   /* Iterate through headers, check for Content-Length */
   for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
@@ -329,10 +329,10 @@ void check_content_length(struct message_t *http_message){
         pthread_exit(NULL);
       }
 
-      /* Content-Length's presence indicates an HTTP response or certain requests. */
+      /* Content-Length's presence indicates presence of message body */
       if (strcmp(http_message->headers[i].header_name, "Content-Length") == 0) {
 
-        /* If the message is indeed a request, only POST requests will have the method line parsed. */
+        /* If the message is indeed a request, only PUT/POST requests will have the method line parsed. */
         /* If both these fields are NULL, it means a non-supported request method was sent. */
         if(http_message->request_method_info.method_type == NULL && http_message->response_status_line.http_protocol == NULL) {
             strncpy(log_message, "Failure: Unsupported Method.", LOG_SIZE);
@@ -341,7 +341,7 @@ void check_content_length(struct message_t *http_message){
             pthread_exit(NULL);
         }
 
-        http_message->data_type.is_response = 0;
+        http_message->data_type.has_body = 0;
 
         /* Reset errno to 0 before strtol call */
         errno = 0;
@@ -357,6 +357,9 @@ void check_content_length(struct message_t *http_message){
         }
       }
      }
+   }
+   if( http_message->data_type.has_body == 1 ) {
+     http_message->data_type.content_length = 0;
    }
    return;
 }

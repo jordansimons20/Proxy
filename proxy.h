@@ -40,6 +40,7 @@ struct status_line{
 /* Contains if HTTP message is request or response */
 struct http_type {
   int is_response;
+  int has_body;
   long content_length; // Responses/POST requests only.
 };
 
@@ -55,7 +56,7 @@ struct message_t {
 void *serve_request(void *thread_info);
 int parse_message(char *request_buffer, struct message_t *http_request);
 void authenticate();
-void respond(int client, char *content);
+void respond(int client, char *content, int response_length);
 void log_event(char *log_message);
 int stop_server(int server);
 void parse_status_line(struct status_line *status_line, char *http_line);
