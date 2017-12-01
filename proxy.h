@@ -55,7 +55,7 @@ struct message_t {
 /* Function Prototypes */
 void *serve_request(void *thread_info);
 int parse_message(char *request_buffer, struct message_t *http_request);
-void authenticate();
+void authenticate(void);
 void respond(int client, char *content, int response_length);
 void log_event(char *log_message);
 int stop_server(int server);

@@ -105,7 +105,7 @@ static int read_body(int client, char **body_buffer, char *body_overflow, long c
     while (0 == 0) {
 
       puts("About to read");
-      n = read(client, *body_buffer + body_length, content_length);
+      n = recv(client, *body_buffer + body_length, content_length, MSG_WAITALL);
 
       printf("n: %d\n", n);
 
