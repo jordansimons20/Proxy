@@ -45,7 +45,6 @@ static int read_data(int client, char **header_buffer, char *body_beginning){
 
       /* We bypass the "\n\r\n" needle points to, and copy beginning of the message body */
 
-      //body_beginning_length = read_length - 3-(*header_buffer - needle); /* Dmitry Implemented this one */
       body_beginning_length = read_length - (3 -(*header_buffer - needle));
       printf("body_beginning_length: %d\n", body_beginning_length);
 
@@ -75,13 +74,10 @@ static int read_body(int client, char **body_buffer, char *body_overflow, long c
   char log_message[LOG_SIZE];
   int n;
 
-  //strcpy(*body_buffer, body_overflow);
   memcpy(*body_buffer, body_overflow, body_length);
 
   /* Subtract data already read in read_data() */
   content_length -= body_length;
-
-  //printf("body_overflow: %lu\n", strlen(body_overflow));
 
   /* For requests, we know content_length is accurate. */
   if(is_response == 1) {
@@ -132,7 +128,6 @@ static int read_body(int client, char **body_buffer, char *body_overflow, long c
         pthread_exit(NULL);
       }
     }
-    //*(*body_buffer + read_length + overflow_size) = 0;
     (*body_buffer)[body_length] = 0;
     printf("Bytes Read: %d\n", body_length);
   }
@@ -181,7 +176,7 @@ static int connect_to_host(struct message_t *http_request){
       pthread_exit(NULL);
   }
 
-  freeaddrinfo(servinfo); /* All done with this structure */
+  freeaddrinfo(servinfo);
   puts("Connected!");
 
   return host_socket;
@@ -217,8 +212,6 @@ static void send_request_to_host(int host_socket, char *http_request, int messag
 /* Responds to client with given content. */
 void respond(int client, char *content, int response_length){
 
-  // NOTE: Might work better to just pass *content with the HTML header specified, then strcat whatever else.
-
   char log_message[LOG_SIZE];
 	if (-1 == write(client, content, response_length)) {
     strncpy(log_message, "Failure: Respond to Client", LOG_SIZE);
@@ -247,8 +240,6 @@ void *serve_request(void *thread_info) {
   int body_length;
 
   /* Initialize struct values to NULL */
-  // memset(http_request.headers,0,HEADER_ARRAY_LENGTH*sizeof(struct header_array));
-  // memset(http_response.headers,0,HEADER_ARRAY_LENGTH*sizeof(struct header_array));
   for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
       http_request.headers[i].header_name = NULL;
       http_request.headers[i].header_value = NULL;
@@ -305,14 +296,12 @@ void *serve_request(void *thread_info) {
   strcat(relative_header_buffer, header_buffer + http_request.request_method_info.original_length);
 
   int relative_len = strlen(relative_header_buffer);
-  // int body_buffer_len = strlen(body_buffer);
 
   char http_message[relative_len + body_length];
   strcpy(http_message, relative_header_buffer);
 
   /* Add the body, if there is one. */
   if (http_request.data_type.has_body == 0) {
-    // strcat(http_message, body_buffer);
     memcpy(http_message + relative_len, body_buffer, body_length);
   }
 
@@ -335,9 +324,7 @@ void *serve_request(void *thread_info) {
   /* Clear body_overflow for re-use */
   memset(&body_overflow[0], 0, sizeof(body_overflow));
 
-
   body_length = read_data(host, &response_header_buffer, body_overflow);
-  //printf("Response Headers:\n%s", response_header_buffer);
 
   parse_message(response_header_buffer, &http_response);
 
@@ -351,8 +338,6 @@ void *serve_request(void *thread_info) {
   if (http_response.data_type.content_length != 0) {// TODO: We check this twice (also in read_body(), remove one)
   body_length = read_body(host, &response_body_buffer, body_overflow, http_response.data_type.content_length, http_response.data_type.is_response, body_length);
   }
-
-  //printf("Response body: %s \n", response_body_buffer);
 
   close(host);
 
@@ -368,11 +353,7 @@ void *serve_request(void *thread_info) {
 
   body_length += response_header_length;
 
-  //printf("Http Response:\n%s\n", full_http_response);
   fwrite(full_http_response, sizeof(char), body_length, stdout);
-
-
-  //printf("body_overflow:\n%s\n", body_overflow);
 
   respond(client, full_http_response, body_length);
 

@@ -292,11 +292,9 @@ void parse_header(struct header_array *headers, char *header_line) {
       strcpy(headers[i].header_name, name);
 
       /* Trim leading whitespace on header value. */
-      // NOTE: This approach eliminates the odd behavior when trimming the space, but perhaps there is a more elegant way of doing it?
       save_len = strlen(saveptr) + 1;
       saveptr++;
 
-      // headers[i].header_value = (char *) malloc(strlen(saveptr));
       headers[i].header_value = malloc(save_len);
       if (headers[i].header_value == NULL) {
         strncpy(log_message, "Failure: malloc() header_value", LOG_SIZE);
@@ -332,8 +330,8 @@ void check_content_length(struct message_t *http_message){
       /* Content-Length's presence indicates presence of message body */
       if (strcmp(http_message->headers[i].header_name, "Content-Length") == 0) {
 
-        /* If the message is indeed a request, only PUT/POST requests will have the method line parsed. */
-        /* If both these fields are NULL, it means a non-supported request method was sent. */
+        /* If the message is indeed a request, only PUT/POST requests will have the method line parsed.
+        If both these fields are NULL, it means a non-supported request method was sent. */
         if(http_message->request_method_info.method_type == NULL && http_message->response_status_line.http_protocol == NULL) {
             strncpy(log_message, "Failure: Unsupported Method.", LOG_SIZE);
             // respond("501 (Not Implemented)");
