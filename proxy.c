@@ -18,7 +18,6 @@ static void send_request_to_host(int host_socket, char *http_request, int messag
 /* Read HTTP request/response headers */
 static int read_data(int client, char **header_buffer, char *body_beginning){
 
-  char log_message[LOG_SIZE];
   int n;
   int body_beginning_length;
   int read_length = 0;
@@ -29,8 +28,7 @@ static int read_data(int client, char **header_buffer, char *body_beginning){
     n = read(client, *header_buffer + read_length, READ_SIZE);
 
     if(n == -1) {
-      strncpy(log_message, "Failure: Read HTTP Request", LOG_SIZE);
-      log_event(log_message);
+      log_event("Failure: Read HTTP Request");
       //free(*header_buffer);
       pthread_exit(NULL);
     }
@@ -59,8 +57,7 @@ static int read_data(int client, char **header_buffer, char *body_beginning){
     /* Realloc enough memory for next read() */
     *header_buffer = realloc(*header_buffer, read_length + READ_SIZE);
     if (*header_buffer == NULL) {
-      strncpy(log_message, "Failure: realloc() header_buffer", LOG_SIZE);
-      log_event(log_message);
+      log_event("Failure: realloc() header_buffer");
       pthread_exit(NULL);
     }
   }
@@ -71,7 +68,6 @@ static int read_data(int client, char **header_buffer, char *body_beginning){
 /* Read HTTP message body. */
 static int read_body(int client, char **body_buffer, char *body_overflow, long content_length, int is_response, int body_length) {
 
-  char log_message[LOG_SIZE];
   int n;
 
   memcpy(*body_buffer, body_overflow, body_length);
@@ -83,16 +79,13 @@ static int read_body(int client, char **body_buffer, char *body_overflow, long c
   if(is_response == 1) {
     puts("Request Implementation");
     if (-1 == (n = read(client, *body_buffer + body_length, content_length ))) {
-      strncpy(log_message, "Failure: Read HTTP Body", LOG_SIZE);
-      //perror("Body");
-      log_event(log_message);
+      log_event("Failure: Read HTTP Body");
       pthread_exit(NULL);
     }
 
     body_length += n;
     (*body_buffer)[body_length] = 0;
     printf("Bytes Read: %d\n", n);
-
   }
 
   /* For responses, we read until there is no more data. */
@@ -106,9 +99,7 @@ static int read_body(int client, char **body_buffer, char *body_overflow, long c
       printf("n: %d\n", n);
 
       if(n == -1) {
-        strncpy(log_message, "Failure: Read HTTP Message Body", LOG_SIZE);
-        log_event(log_message);
-        perror("Response Read Body");
+        log_event("Failure: Read HTTP Message Body");
         pthread_exit(NULL);
       }
 
@@ -123,8 +114,7 @@ static int read_body(int client, char **body_buffer, char *body_overflow, long c
       /* Realloc enough memory for next read() */
       *body_buffer = realloc(*body_buffer, body_length + content_length + 1);
       if (*body_buffer == NULL) {
-        strncpy(log_message, "Failure: realloc() header_buffer", LOG_SIZE);
-        log_event(log_message);
+        log_event("Failure: realloc() header_buffer");
         pthread_exit(NULL);
       }
     }
@@ -137,7 +127,6 @@ static int read_body(int client, char **body_buffer, char *body_overflow, long c
 /* -------------------------------------------------------------------------------------------------------*/
 /* Connects to the host specified in the http_request, returns the host socket. */
 static int connect_to_host(struct message_t *http_request){
-  char log_message[LOG_SIZE];
   struct addrinfo hints, *servinfo, *p;
   int rv, host_socket;
   char *host = http_request->request_method_info.destination_uri.host;
@@ -150,8 +139,7 @@ static int connect_to_host(struct message_t *http_request){
 
   /* Get information to connect to the host. */
   if ((rv = getaddrinfo(host, port, &hints, &servinfo)) != 0) {
-    strncpy(log_message, "Failure: getaddrinfo", LOG_SIZE);
-    log_event(log_message);
+    log_event("Failure: getaddrinfo");
     pthread_exit(NULL);
   }
 
@@ -171,8 +159,7 @@ static int connect_to_host(struct message_t *http_request){
 
   if (p == NULL) {
       /* Looped off the end of the list with no connection */
-      strncpy(log_message, "Failure: could not connect to host", LOG_SIZE);
-      log_event(log_message);
+      log_event("Failure: could not connect to host");
       pthread_exit(NULL);
   }
 
@@ -195,11 +182,9 @@ void authenticate(){
 /* -------------------------------------------------------------------------------------------------------*/
 /* Send the modified HTTP request to the host */
 static void send_request_to_host(int host_socket, char *http_request, int message_length){
-  char log_message[LOG_SIZE];
 
   if( write(host_socket, http_request, message_length) == -1 ) {
-    strncpy(log_message, "Failure: write to host", LOG_SIZE);
-    log_event(log_message);
+    log_event("Failure: write to host");
     pthread_exit(NULL);
   }
   fsync(host_socket);
@@ -212,10 +197,8 @@ static void send_request_to_host(int host_socket, char *http_request, int messag
 /* Responds to client with given content. */
 void respond(int client, char *content, int response_length){
 
-  char log_message[LOG_SIZE];
 	if (-1 == write(client, content, response_length)) {
-    strncpy(log_message, "Failure: Respond to Client", LOG_SIZE);
-    log_event(log_message);
+    log_event("Failure: Respond to Client");
     pthread_exit(NULL);
     }
   return;
@@ -226,7 +209,6 @@ void *serve_request(void *thread_info) {
 
   int client = (int) thread_info;
   int host;
-  char log_message[LOG_SIZE];
   struct message_t http_request;
   http_request.data_type.is_response = 1;
   http_request.data_type.has_body = 1;
@@ -270,8 +252,7 @@ void *serve_request(void *thread_info) {
 
   header_buffer = malloc(READ_SIZE);
   if (header_buffer == NULL) {
-    strncpy(log_message, "Failure: malloc() header_buffer", LOG_SIZE);
-    log_event(log_message);
+    log_event("Failure: malloc() header_buffer");
     pthread_exit(NULL);
   }
 
@@ -316,8 +297,7 @@ void *serve_request(void *thread_info) {
   /* We read the response the same way as the initial request */
   response_header_buffer = malloc(READ_SIZE);
   if (response_header_buffer == NULL) {
-    strncpy(log_message, "Failure: malloc() response_header_buffer", LOG_SIZE);
-    log_event(log_message);
+    log_event("Failure: malloc() response_header_buffer");
     pthread_exit(NULL);
   }
 
@@ -330,8 +310,7 @@ void *serve_request(void *thread_info) {
 
   response_body_buffer = malloc( (http_response.data_type.content_length + 1));
   if (response_body_buffer == NULL) {
-    strncpy(log_message, "Failure: malloc() response_body_buffer", LOG_SIZE);
-    log_event(log_message);
+    log_event("Failure: malloc() response_body_buffer");
     pthread_exit(NULL);
   }
 
@@ -393,7 +372,7 @@ void *serve_request(void *thread_info) {
 
   fsync(client);
   close(client);
-  // authenticate();
+  //authenticate();
 
   pthread_exit(NULL);
 }

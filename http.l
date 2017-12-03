@@ -27,8 +27,6 @@
   /* Parse HTTP message */
   int parse_message(char *message_buffer, struct message_t *http_request) {
 
-  char log_message[LOG_SIZE];
-
   /* Configure lex setup */
   yyscan_t scanner;
   YY_BUFFER_STATE buf;
@@ -49,9 +47,7 @@
   /* Ensure HTTP Request uses supported methods. */
   if(http_request->data_type.is_response == 1) {
     if(http_request->request_method_info.method_type == NULL){
-      strncpy(log_message, "Failure: Unsupported Method.", LOG_SIZE);
-      // respond("501 (Not Implemented)");
-      log_event(log_message);
+      log_event("Failure: Unsupported Method.");
       pthread_exit(NULL);
     }
   }
