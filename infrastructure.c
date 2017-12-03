@@ -29,9 +29,7 @@ int main(void){
   char log_message[LOG_SIZE];
 
   /* Start a new server */
-  if (-1 == (server = start_server(port))) {
-    strncpy(log_message, "Failure: Start the Proxy Server.", LOG_SIZE);
-    log_event(log_message);
+  if (EXIT_FAILURE == (server = start_server(port))) {
     return EXIT_FAILURE;
   }
 
@@ -67,7 +65,7 @@ static int start_server(int port){
 
   /* Bind the endpoint to the socket */
   if (-1 == bind(server, (struct sockaddr *) &serv_addr, sizeof(serv_addr))) {
-    strncpy(log_message, "Failure: Bind the Endpoint to the Socket", LOG_SIZE);
+    strncpy(log_message, "Failure: Busy Socket (wait and retry)", LOG_SIZE);
     log_event(log_message);
     return EXIT_FAILURE; }
 
