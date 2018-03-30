@@ -26,22 +26,17 @@ int main(void){
 
   int port = 8080;
   int server;
-  char log_message[LOG_SIZE];
 
   /* Start a new server */
-  if (-1 == (server = start_server(port))) {
-    strncpy(log_message, "Failure: Start the Proxy Server.", LOG_SIZE);
-    log_event(log_message);
+  if (EXIT_FAILURE == (server = start_server(port))) {
     return EXIT_FAILURE;
   }
 
-  strncpy(log_message, "Proxy Server Started.", LOG_SIZE);
-  log_event(log_message);
+  log_event("Proxy Server Started.");
 
   accept_connection(server);
 
-  strncpy(log_message, "Proxy Server Terminated.", LOG_SIZE);
-  log_event(log_message);
+  log_event("Proxy Server Terminated.");
 
   return EXIT_SUCCESS;
 }
@@ -51,12 +46,10 @@ static int start_server(int port){
 
   int server;
   struct sockaddr_in serv_addr;
-  char log_message[LOG_SIZE];
 
   /* Create a new TCP/IP socket */
   if (-1 == (server = socket(AF_INET, SOCK_STREAM, 0)) ) {
-    strncpy(log_message, "Failure: Create Socket.", LOG_SIZE);
-    log_event(log_message);
+    log_event("Failure: Create Socket.");
     return EXIT_FAILURE; }
 
   /* Prepare the endpoint */
@@ -67,14 +60,12 @@ static int start_server(int port){
 
   /* Bind the endpoint to the socket */
   if (-1 == bind(server, (struct sockaddr *) &serv_addr, sizeof(serv_addr))) {
-    strncpy(log_message, "Failure: Bind the Endpoint to the Socket", LOG_SIZE);
-    log_event(log_message);
+    log_event("Failure: Busy Socket (wait and retry).");
     return EXIT_FAILURE; }
 
   /* Prepare for listening */
   if (-1 == listen(server, 5)) {
-    strncpy(log_message, "Failure: Prepare for Listening.", LOG_SIZE);
-    log_event(log_message);
+    log_event("Failure: Prepare for Listening.");
     return EXIT_FAILURE; }
 
   return server;
@@ -87,7 +78,6 @@ static int accept_connection(int server){
   int done = 0;
   pthread_t newThread = NULL;
   FILE *pidFile;
-  char log_message[LOG_SIZE];
   struct sigaction sa;
 
   /* Set global variable */
@@ -96,15 +86,13 @@ static int accept_connection(int server){
   /* Open proxy.pid */
   pidFile = fopen("/tmp/proxy.pid", "w");
   if (pidFile == NULL) {
-    strncpy(log_message, "Failure: Open proxy.pid", LOG_SIZE);
-    log_event(log_message);
+    log_event("Failure: Open proxy.pid");
     return EXIT_FAILURE;
     }
 
   /* Write master thread pid into proxy.pid */
   if ( fprintf(pidFile, "%d", master_pid ) < 0){
-    strncpy(log_message, "Failure: Write to proxy.pid", LOG_SIZE);
-    log_event(log_message);
+    log_event("Failure: Write to proxy.pid");
     return EXIT_FAILURE;
     }
 
@@ -116,8 +104,7 @@ static int accept_connection(int server){
   sa.sa_flags = 0;
 
   if (sigaction(SIGUSR1, &sa, NULL) == -1) {
-    strncpy(log_message, "Failure: SIGUSR1", LOG_SIZE);
-    log_event(log_message);
+    log_event("Failure: SIGUSR1");
     return EXIT_FAILURE;
   }
 
@@ -134,8 +121,7 @@ static int accept_connection(int server){
 
       /* If we did not return from SIGUSR1, we have some unexpected error. */
       else {
-        strncpy(log_message, "Failure: Accepting Requests", LOG_SIZE);
-        log_event(log_message);
+        log_event("Failure: Accepting Requests");
         stop_server(server);
         return EXIT_FAILURE;
       }
@@ -144,8 +130,7 @@ static int accept_connection(int server){
     long clientArg = (long) client;
     if ( 0 != pthread_create(&newThread, NULL, serve_request, (void *) clientArg) )
     {
-      strncpy(log_message, "Failure: Thread Creation", LOG_SIZE);
-      log_event(log_message);
+      log_event("Failure: Thread Creation");
     }
 
   } while (!done);

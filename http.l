@@ -1,7 +1,6 @@
 %{
 #include <stdio.h>
 #include "proxy.h"
-#include <errno.h>
   /*
     flex -i -I http.l
     cc -c -o lex.yy.o lex.yy.c
@@ -18,17 +17,15 @@
 ^"HTTP/"[^ ]+" "[0-9]{3}" ".+"\n" { parse_status_line(&yyextra->response_status_line, yytext); }
 ^("GET"|"PUT"|"POST")" "([^ ]+)" HTTP/"([^ ]+)"\n" {
   parse_method(&yyextra->request_method_info, yytext); }
-^[^:\n]+": ".+"\n"+ { parse_header(yyextra->headers, yytext); }
-.+ {
-  puts(yytext);
-  /* TODO: parse_body(); */ }
+^[^:\n\r]+": ".+[\n\r]+ { parse_header(yyextra->headers, yytext); }
+.+ { puts("WARNING: THIS SHOULD NOT BE HERE!");
+  for(int i = 0; i < strlen(yytext); i++) {
+  printf("[%u]\n", (unsigned char) yytext[i]);
+} }
 %%
 
-/* Parse HTTP message */
-  int parse_message(int client, char *message_buffer, struct message_t *http_request) {
-
-  char *cl_conversion;
-  char log_message[LOG_SIZE];
+  /* Parse HTTP message */
+  int parse_message(char *message_buffer, struct message_t *http_request) {
 
   /* Configure lex setup */
   yyscan_t scanner;
@@ -44,38 +41,16 @@
   yy_delete_buffer(buf, scanner);
   yylex_destroy(scanner);
 
-  /* Iterate through headers, check for Content-Length */
-  for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
+  /* Iterate through headers, looking for "Content-Length" */
+  check_content_length(http_request);
 
-    if(http_request->headers[i].header_name != NULL && http_request->headers[i].header_value != NULL) {
-
-      /* We do not support Transfer-Encoding */
-      if (strcmp(http_request->headers[i].header_name, "Transfer-Encoding") == 0) {
-        strncpy(log_message, "Failure: Transfer-Encoding Header.", LOG_SIZE);
-        // respond("501 (Not Implemented)");
-        log_event(log_message);
-        pthread_exit(NULL);
-      }
-
-      /* Content-Length's presence indicates an HTTP response or POST request. */
-      if (strcmp(http_request->headers[i].header_name, "Content-Length") == 0) {
-        http_request->data_type.is_response = 0;
-
-        /* Reset errno to 0 before strtol call */
-        errno = 0;
-
-        /* Save content_length. */
-        http_request->data_type.content_length = strtol(http_request->headers[i].header_value, &cl_conversion, 10);
-
-        /* If errno is set, the 0 returned is invalid. */
-        if (http_request->data_type.content_length == 0 && errno != 0){
-          strncpy(log_message, "Failure: Could not convert Content-Length", LOG_SIZE);
-          log_event(log_message);
-          pthread_exit(NULL);
-        }
-      }
-     }
-   }
+  /* Ensure HTTP Request uses supported methods. */
+  if(http_request->data_type.is_response == 1) {
+    if(http_request->request_method_info.method_type == NULL){
+      log_event("Failure: Unsupported Method.");
+      pthread_exit(NULL);
+    }
+  }
 
   /* Testing: Print method/status_line, and all parsed headers */
 
@@ -86,8 +61,13 @@
 
   //NOTE: Request fields only.
   // printf("method_line:%s\n", http_request->request_method_info.method_type );
-  // printf("destination_uri:%s\n", http_request->request_method_info.destination_uri );
+  // printf("destination_uri:%s\n", http_request->request_method_info.destination_uri.original_destination_uri );
   // printf("http_protocol:%s\n", http_request->request_method_info.http_protocol );
+  // printf("Original Method_Line Length: %d\n", http_request->request_method_info.original_length);
+  // printf("Host: %s\n", http_request->request_method_info.destination_uri.host);
+  // printf("Path: %s\n", http_request->request_method_info.destination_uri.absolute_path);
+  // printf("Port: %s\n", http_request->request_method_info.destination_uri.port);
+    // printf("Relative method_line: %s\n",  http_request->request_method_info.relative_method_line);
 
   // for(int i = 0; i < HEADER_ARRAY_LENGTH; i++) {
   //   if(http_request->headers[i].header_name != NULL && http_request->headers[i].header_value != NULL) {

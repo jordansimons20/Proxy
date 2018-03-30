@@ -2,7 +2,6 @@
 #define PROXY_H_INCLUDED
 /* Constants */
 extern int master_pid;
-static const int LOG_SIZE = 200;
 static const int REQUEST_SIZE = 8192;
 static const int HTTP_HEADER_NAME_SIZE = 120;
 static const int HEADER_ARRAY_LENGTH = 100; // Maximum allowed number of headers in a request.
@@ -14,14 +13,23 @@ struct header_array {
   char *header_value;
 };
 
-/* For each HTTP request method line */
+/* Contains pieces of the destination_uri in HTTP requests */
+struct destination_uri {
+  char *original_destination_uri;
+  char *host;
+  char *port;
+  char *absolute_path;
+};
+/* For each HTTP request method line. Each value is NULL if the HTTP message is a response. */
 struct method_line{
   char *method_type;
-  char *destination_uri;
+  struct destination_uri destination_uri;
   char *http_protocol;
+  int original_length;
+  char *relative_method_line;
 };
 
-/* For each HTTP response status line */
+/* For each HTTP response status line. Each value is NULL if the HTTP message is a request. */
 struct status_line{
   char *http_protocol;
   char *status_code;
@@ -31,6 +39,7 @@ struct status_line{
 /* Contains if HTTP message is request or response */
 struct http_type {
   int is_response;
+  int has_body;
   long content_length; // Responses/POST requests only.
 };
 
@@ -44,14 +53,15 @@ struct message_t {
 
 /* Function Prototypes */
 void *serve_request(void *thread_info);
-int parse_message(int client, char *request_buffer, struct message_t *http_request);
-void authenticate();
-void respond(int client, char *content);
+int parse_message(char *request_buffer, struct message_t *http_request);
+void authenticate(void);
+void respond(int client, char *content, int response_length);
 void log_event(char *log_message);
 int stop_server(int server);
 void parse_status_line(struct status_line *status_line, char *http_line);
 void parse_method(struct method_line *method_line, char *http_line);
 void parse_header(struct header_array *headers, char *header_line);
+void check_content_length(struct message_t *http_message);
 
 /* Preprocessing */
 #include <stdio.h>
